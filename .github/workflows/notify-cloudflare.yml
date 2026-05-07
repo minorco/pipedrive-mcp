@@ -3,6 +3,10 @@ name: Notify cloudflare worker on integration push
 # Fires when integration is updated. Sole job: tell minorco/pipedrive-mcp-cloudflare
 # to run its sync-and-deploy workflow. The actual sync logic, build gate, commit,
 # and push live in the cloudflare repo.
+#
+# Auth: a GitHub App installation token minted at runtime, scoped to
+# Contents: Read/Write on the cloudflare repo only. App ID + private key
+# are in fork-repo secrets. No long-lived PAT involved.
 
 on:
   push:
@@ -13,9 +17,18 @@ jobs:
   dispatch:
     runs-on: ubuntu-latest
     steps:
+      - name: Mint installation token from GitHub App
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.CLOUDFLARE_DISPATCH_APP_ID }}
+          private-key: ${{ secrets.CLOUDFLARE_DISPATCH_PRIVATE_KEY }}
+          owner: minorco
+          repositories: pipedrive-mcp-cloudflare
+
       - name: Trigger sync-and-deploy on cloudflare repo
         env:
-          GH_TOKEN: ${{ secrets.CLOUDFLARE_DISPATCH_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           gh api \
             --method POST \
