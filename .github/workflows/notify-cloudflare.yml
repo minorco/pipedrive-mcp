@@ -1,0 +1,25 @@
+name: Notify cloudflare worker on integration push
+
+# Fires when integration is updated. Sole job: tell minorco/pipedrive-mcp-cloudflare
+# to run its sync-and-deploy workflow. The actual sync logic, build gate, commit,
+# and push live in the cloudflare repo.
+
+on:
+  push:
+    branches: [integration]
+  workflow_dispatch: {}
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger sync-and-deploy on cloudflare repo
+        env:
+          GH_TOKEN: ${{ secrets.CLOUDFLARE_DISPATCH_TOKEN }}
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/minorco/pipedrive-mcp-cloudflare/dispatches \
+            -f event_type=sync-from-fork-integration \
+            -f client_payload[fork_sha]="${{ github.sha }}"
