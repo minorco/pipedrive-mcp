@@ -81,6 +81,7 @@ export const CustomFieldKeysSchema = z
 
 export const VisibleToSchema = z
   .enum(["1", "3", "5", "7"])
+  .transform(Number)
   .optional()
   .describe("Visibility: 1=owner only, 3=owner's group, 5=owner's group+sub, 7=everyone");
 
