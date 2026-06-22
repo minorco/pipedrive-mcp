@@ -114,6 +114,28 @@ describe("pipedrive_deals_create", () => {
     expect(deal.title).toBe("Acme Corp - Enterprise Package");
     expect(deal.value).toBe(10000);
   });
+
+  it("sends visible_to as an integer, not a string", async () => {
+    const fixture = fixturesV2("deals-create.json");
+
+    let sentVisibleTo: unknown;
+    nock(BASE_URL)
+      .post("/api/v2/deals", (body: Record<string, unknown>) => {
+        sentVisibleTo = body.visible_to;
+        return true;
+      })
+      .query(true)
+      .reply(201, fixture);
+
+    const { result } = await callTool("pipedrive_deals_create", {
+      title: "Acme Corp - Enterprise Package",
+      visible_to: "7",
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(sentVisibleTo).toBe(7);
+    expect(typeof sentVisibleTo).toBe("number");
+  });
 });
 
 describe("pipedrive_deals_update", () => {

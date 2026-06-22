@@ -7,6 +7,7 @@ import { normalizeApiError } from "../pipedrive/error-normalizer.js";
 import { buildPaginationParams, buildPaginatedResult } from "../pipedrive/pagination.js";
 import { compactActivity } from "../presenters/entities.js";
 import { validateConfirmation, buildDryRunResult } from "../services/guards.js";
+import { resolveActivityType } from "../services/activity-types.js";
 import {
   ActivitiesListSchema,
   ActivitiesGetSchema,
@@ -68,7 +69,13 @@ async function handleActivitiesCreate(args: Record<string, unknown>): Promise<To
 
   const { apiV2, rateLimiters } = getContext();
   const input = parsed.data;
-  const body: Record<string, unknown> = { subject: input.subject, type: input.type };
+
+  // Validate the activity type against the account's configured types so an
+  // invalid value returns actionable guidance instead of an opaque API 400.
+  const resolvedType = await resolveActivityType(input.type);
+  if (resolvedType.error) return validationErrorResult("pipedrive_activities_create", resolvedType.error);
+
+  const body: Record<string, unknown> = { subject: input.subject, type: resolvedType.keyString };
   if (input.deal_id) body.deal_id = input.deal_id;
   // v2 uses participants array instead of person_id (which is read-only)
   if (input.person_id) body.participants = [{ person_id: input.person_id, primary: true }];
@@ -98,7 +105,11 @@ async function handleActivitiesUpdate(args: Record<string, unknown>): Promise<To
   const input = parsed.data;
   const body: Record<string, unknown> = {};
   if (input.subject) body.subject = input.subject;
-  if (input.type) body.type = input.type;
+  if (input.type) {
+    const resolvedType = await resolveActivityType(input.type);
+    if (resolvedType.error) return validationErrorResult("pipedrive_activities_update", resolvedType.error);
+    body.type = resolvedType.keyString;
+  }
   if (input.deal_id) body.deal_id = input.deal_id;
   if (input.person_id) body.participants = [{ person_id: input.person_id, primary: true }];
   if (input.org_id) body.org_id = input.org_id;
