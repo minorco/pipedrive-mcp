@@ -127,6 +127,7 @@ const policies: Record<string, EndpointPolicy> = {
   "mailThreads.delete": { version: "v1", method: "DELETE", path: "/mailbox/mailThreads/:id", pagination: "none" },
   "dealMailMessages.list": { version: "v1", method: "GET", path: "/deals/:id/mailMessages", pagination: "offset" },
   "personMailMessages.list": { version: "v1", method: "GET", path: "/persons/:id/mailMessages", pagination: "offset" },
+  "organizationMailMessages.list": { version: "v1", method: "GET", path: "/organizations/:id/mailMessages", pagination: "offset" },
 };
 
 export function getEndpointPolicy(key: string): EndpointPolicy {
