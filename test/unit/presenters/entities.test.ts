@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   compactDeal,
   compactPerson,
@@ -30,6 +30,47 @@ describe("compactDeal", () => {
     expect(compact.stage_id).toBeNull();
     expect(compact.person_id).toBeNull();
     expect(compact.value).toBeNull();
+  });
+
+  describe("days_in_stage", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("computes whole days from a v2 ISO stage_change_time", () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-03-20T18:45:37Z"));
+      const compact = compactDeal({ id: 1, title: "T", stage_change_time: "2026-03-05T18:45:37Z" });
+      expect(compact.stage_change_time).toBe("2026-03-05T18:45:37Z");
+      expect(compact.days_in_stage).toBe(15);
+    });
+
+    it("computes whole days from a v1 space-separated UTC stage_change_time", () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-03-20T00:00:00Z"));
+      const compact = compactDeal({ id: 1, title: "T", stage_change_time: "2026-03-10 12:00:00" });
+      // 9.5 days elapsed -> floored to 9
+      expect(compact.days_in_stage).toBe(9);
+    });
+
+    it("returns null when stage_change_time is absent or null", () => {
+      expect(compactDeal({ id: 1, title: "T" }).days_in_stage).toBeNull();
+      expect(compactDeal({ id: 1, title: "T", stage_change_time: null }).days_in_stage).toBeNull();
+    });
+
+    it("clamps a future stage_change_time to 0", () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-03-20T00:00:00Z"));
+      const compact = compactDeal({ id: 1, title: "T", stage_change_time: "2026-03-25T00:00:00Z" });
+      expect(compact.days_in_stage).toBe(0);
+    });
+
+    it("returns 0 on the same day the stage changed", () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-03-20T20:00:00Z"));
+      const compact = compactDeal({ id: 1, title: "T", stage_change_time: "2026-03-20T08:00:00Z" });
+      expect(compact.days_in_stage).toBe(0);
+    });
   });
 });
 
