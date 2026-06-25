@@ -12,6 +12,8 @@ export interface CompactDeal {
   org_id: number | null;
   owner_id: number | null;
   expected_close_date: string | null;
+  stage_change_time: string | null;
+  days_in_stage: number | null;
   update_time: string | null;
   custom_fields_resolved?: Array<{ key: string; label: string; value: unknown; display_value: string }>;
 }
@@ -78,6 +80,28 @@ function extractPhones(data: unknown): string[] {
     .filter((v): v is string => typeof v === "string" && v.length > 0);
 }
 
+// Parse a Pipedrive timestamp to epoch ms. Handles v2 ISO ("2026-03-23T18:45:37Z")
+// and v1 space-separated UTC ("2026-03-23 18:45:37", no zone designator). Pipedrive
+// timed values are UTC, so a bare datetime is normalised to UTC before parsing.
+function parsePipedriveTime(value: unknown): number | null {
+  if (typeof value !== "string" || value.length === 0) return null;
+  const hasZone = /[zZ]$|[+-]\d{2}:?\d{2}$/.test(value);
+  const iso = value.includes("T") ? value : value.replace(" ", "T");
+  const normalised = hasZone ? iso : `${iso}Z`;
+  const ms = Date.parse(normalised);
+  return Number.isNaN(ms) ? null : ms;
+}
+
+// Whole days elapsed since `stage_change_time`, floored, never negative.
+// null when the deal has no stage_change_time (e.g. never moved stage).
+function daysInStage(stageChangeTime: unknown): number | null {
+  const changed = parsePipedriveTime(stageChangeTime);
+  if (changed === null) return null;
+  const elapsedMs = Date.now() - changed;
+  if (elapsedMs < 0) return 0;
+  return Math.floor(elapsedMs / 86_400_000);
+}
+
 export function compactDeal(raw: Record<string, unknown>): CompactDeal {
   return {
     id: raw.id as number,
@@ -91,6 +115,8 @@ export function compactDeal(raw: Record<string, unknown>): CompactDeal {
     org_id: (raw.org_id as number) ?? null,
     owner_id: (raw.owner_id as number) ?? (raw.user_id as number) ?? null,
     expected_close_date: (raw.expected_close_date as string) ?? null,
+    stage_change_time: (raw.stage_change_time as string) ?? null,
+    days_in_stage: daysInStage(raw.stage_change_time),
     update_time: (raw.update_time as string) ?? null,
   };
 }
