@@ -55,3 +55,9 @@ export const PersonMailMessagesListSchema = z.object({
   cursor: PageTokenSchema,
   limit: LimitSchema,
 }).strict();
+
+export const OrganizationMailMessagesListSchema = z.object({
+  org_id: IdSchema.describe("The organization ID"),
+  cursor: PageTokenSchema,
+  limit: LimitSchema,
+}).strict();

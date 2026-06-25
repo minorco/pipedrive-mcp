@@ -321,3 +321,28 @@ describe("pipedrive_person_mail_messages_list", () => {
     expect(parsed.truncated).toBe(false);
   });
 });
+
+describe("pipedrive_organization_mail_messages_list", () => {
+  it("returns mail messages for an organization", async () => {
+    const fixture = fixturesV1("organization-mail-messages-list.json");
+
+    nock(BASE_URL)
+      .get("/v1/organizations/301/mailMessages")
+      .query(true)
+      .reply(200, fixture);
+
+    const { result, data } = await callTool("pipedrive_organization_mail_messages_list", {
+      org_id: 301,
+    });
+
+    expect(result.isError).toBeFalsy();
+    const parsed = data as Record<string, unknown>;
+    expect(parsed.items).toBeInstanceOf(Array);
+    const items = parsed.items as Array<Record<string, unknown>>;
+    expect(items.length).toBe(1);
+    expect(items[0].id).toBe(802);
+    expect(items[0].subject).toBe("Account review follow-up");
+    expect(items[0].from_email).toBe("carol@acmecorp.com");
+    expect(parsed.truncated).toBe(false);
+  });
+});

@@ -16,8 +16,17 @@ import {
   MailThreadsDeleteSchema,
   DealMailMessagesListSchema,
   PersonMailMessagesListSchema,
+  OrganizationMailMessagesListSchema,
 } from "../schemas/mail.js";
 import { zodToJsonSchema } from "../schemas/zod-to-json.js";
+
+// The deal/person/organization "associated mail messages" v1 endpoints wrap each
+// item in an envelope ({ object, timestamp, data: <message> }), unlike the mailbox
+// endpoints which return messages flat. Unwrap to the inner message before compacting.
+function unwrapAssociatedMailMessage(item: Record<string, unknown>): Record<string, unknown> {
+  const inner = item.data;
+  return inner && typeof inner === "object" ? (inner as Record<string, unknown>) : item;
+}
 
 async function handleMailThreadsList(args: Record<string, unknown>): Promise<ToolResult> {
   const parsed = MailThreadsListSchema.safeParse(args);
@@ -151,7 +160,7 @@ async function handleDealMailMessagesList(args: Record<string, unknown>): Promis
 
   const items = response.data.data ?? [];
   const result = buildPaginatedResult(items, "offset", response.data as unknown as Record<string, unknown>);
-  return paginatedResult({ items: result.items.map(compactMailMessage), next_page_token: result.next_page_token, approx_count: result.approx_count, truncated: result.truncated, pagination_mode: result.pagination_mode });
+  return paginatedResult({ items: result.items.map((i) => compactMailMessage(unwrapAssociatedMailMessage(i))), next_page_token: result.next_page_token, approx_count: result.approx_count, truncated: result.truncated, pagination_mode: result.pagination_mode });
 }
 
 async function handlePersonMailMessagesList(args: Record<string, unknown>): Promise<ToolResult> {
@@ -171,7 +180,27 @@ async function handlePersonMailMessagesList(args: Record<string, unknown>): Prom
 
   const items = response.data.data ?? [];
   const result = buildPaginatedResult(items, "offset", response.data as unknown as Record<string, unknown>);
-  return paginatedResult({ items: result.items.map(compactMailMessage), next_page_token: result.next_page_token, approx_count: result.approx_count, truncated: result.truncated, pagination_mode: result.pagination_mode });
+  return paginatedResult({ items: result.items.map((i) => compactMailMessage(unwrapAssociatedMailMessage(i))), next_page_token: result.next_page_token, approx_count: result.approx_count, truncated: result.truncated, pagination_mode: result.pagination_mode });
+}
+
+async function handleOrganizationMailMessagesList(args: Record<string, unknown>): Promise<ToolResult> {
+  const parsed = OrganizationMailMessagesListSchema.safeParse(args);
+  if (!parsed.success) return validationErrorResult("pipedrive_organization_mail_messages_list", parsed.error.message);
+
+  const { apiV1, rateLimiters, config } = getContext();
+  const input = parsed.data;
+  const limit = Math.min(input.limit ?? config.defaultLimit, config.maxLimit);
+  const paginationParams = buildPaginationParams("offset", limit, input.cursor);
+
+  const response = await rateLimiters.general.schedule(() =>
+    withRetry(() => apiV1.list<Record<string, unknown>>(`/organizations/${input.org_id}/mailMessages`, paginationParams), { label: `pipedrive_organization_mail_messages_list ${input.org_id}` }),
+  );
+
+  if (response.status !== 200) return apiErrorResult(normalizeApiError(response, "pipedrive_organization_mail_messages_list", `GET /organizations/${input.org_id}/mailMessages`));
+
+  const items = response.data.data ?? [];
+  const result = buildPaginatedResult(items, "offset", response.data as unknown as Record<string, unknown>);
+  return paginatedResult({ items: result.items.map((i) => compactMailMessage(unwrapAssociatedMailMessage(i))), next_page_token: result.next_page_token, approx_count: result.approx_count, truncated: result.truncated, pagination_mode: result.pagination_mode });
 }
 
 const tools: ToolDefinition[] = [
@@ -183,6 +212,7 @@ const tools: ToolDefinition[] = [
   { name: "pipedrive_mail_threads_delete", description: 'Delete a mail thread. Requires confirm: "DELETE". Supports dry_run.', inputSchema: zodToJsonSchema(MailThreadsDeleteSchema), handler: handleMailThreadsDelete },
   { name: "pipedrive_deal_mail_messages_list", description: "List mail messages linked to a deal.", inputSchema: zodToJsonSchema(DealMailMessagesListSchema), handler: handleDealMailMessagesList },
   { name: "pipedrive_person_mail_messages_list", description: "List mail messages linked to a person.", inputSchema: zodToJsonSchema(PersonMailMessagesListSchema), handler: handlePersonMailMessagesList },
+  { name: "pipedrive_organization_mail_messages_list", description: "List mail messages linked to an organization.", inputSchema: zodToJsonSchema(OrganizationMailMessagesListSchema), handler: handleOrganizationMailMessagesList },
 ];
 
 registerTools(tools);
