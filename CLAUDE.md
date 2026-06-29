@@ -28,3 +28,26 @@
 ## Key files
 - src/pipedrive/endpoint-policy.ts is the source of truth for API routing
 - src/services/custom-fields.ts handles all field name resolution
+
+## Dev session
+
+Uses the `dev-session` skill (development plugin). Run session-start before editing, session-end before wrapping.
+
+- Topology: fork-worker
+- Repos:
+  - fork: /Users/warwickpalm/Work/mcp/pipedrive-mcp  (origin: minorco/pipedrive-mcp, upstream: comma-compliance/pipedrive-mcp)
+  - worker: /Users/warwickpalm/Work/mcp/pipedrive-mcp-cloudflare  (origin: minorco/pipedrive-mcp-cloudflare)
+- Deploy:
+  - Push fork `integration` → `notify-cloudflare` workflow dispatches to the worker repo → `sync-and-deploy` re-runs the fork test gate, syncs the fork into the worker, and pushes worker `dev` → Cloudflare auto-deploys the STAGING worker (`pipedrive-mcp-staging`).
+  - Promote to LIVE only via the worker repo's `promote-to-live` workflow (`gh workflow run promote-to-live.yml --repo minorco/pipedrive-mcp-cloudflare`), which merges worker `dev` → `main` → deploys the LIVE worker (`pipedrive-mcp`). Always confirm explicitly before promoting.
+  - Fork `main` is intentionally behind `integration`; it only advances on promote. Topic branches → merge into `integration`.
+- Contribution policy: this fork is MinorCo's own maintained downstream line. Do NOT open PRs to comma-compliance/pipedrive-mcp unless Warwick explicitly asks. comma-compliance is a passive `upstream` remote; pull from it manually and review before folding in. Log upstreamable commits in `UPSTREAM-CANDIDATES.md`.
+- Protected branches: the following fork branches back OPEN PRs to comma-compliance/pipedrive-mcp. NEVER delete them in a branch-cleanup or fork-sync pass. Deleting the head branch auto-closes the upstream PR (this happened once on 2026-06-22 and closed all seven at once). Do not prune them until the PR is merged or Warwick says to abandon it:
+  - `feat/oauth-bearer-auth` (PR #10)
+  - `fix/set-custom-fields-v2` (PR #11)
+  - `docs/clarify-note-html-no-cdata` (PR #13)
+  - `fix/include-fields-and-activity-type-validation` (PR #14)
+  - `fix/activity-presenter-owner-id` (PR #15)
+  - `fix/sort-by-enum-correction` (PR #16)
+  - `feat/product-variations` (PR #17)
+- Specifics: `UPSTREAM-CANDIDATES.md` (upstreamable commit log); `../pipedrive-mcp-cloudflare/SYNC-PROCESS.md` (sync mechanics, worker-only paths); `../pipedrive-mcp-cloudflare/README.md` (deploy/env overview).
