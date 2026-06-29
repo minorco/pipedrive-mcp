@@ -4,6 +4,14 @@ import { z } from "zod";
 
 export const IdSchema = z.coerce.number().int().positive();
 
+// Monetary and quantity values. Some MCP clients (notably certain Claude Desktop
+// builds) serialise numeric arguments as strings, which fails strict z.number()
+// validation on write tools. Coerce so a string-encoded number is accepted, the
+// same defence already applied to IdSchema. Same bug class as issue #18 (numeric
+// IDs as strings); these are the remaining non-ID numerics on write tools.
+export const MoneySchema = z.coerce.number();
+export const QuantitySchema = z.coerce.number();
+
 export const ConfirmDeleteSchema = z
   .literal("DELETE")
   .describe('Must be exactly "DELETE" to confirm deletion');

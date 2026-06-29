@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   IdSchema,
+  MoneySchema,
   LimitSchema,
   SearchLimitSchema,
   PageTokenSchema,
@@ -38,7 +39,7 @@ export const LeadsCreateSchema = z.object({
   owner_id: OwnerIdSchema,
   label_ids: z.array(z.string()).optional().describe("Lead label UUIDs"),
   value: z.object({
-    amount: z.number(),
+    amount: MoneySchema,
     currency: z.string(),
   }).optional().describe("Lead value"),
   expected_close_date: z.string().optional().describe("Expected close date (YYYY-MM-DD)"),
@@ -53,7 +54,7 @@ export const LeadsUpdateSchema = z.object({
   owner_id: OwnerIdSchema,
   label_ids: z.array(z.string()).optional(),
   value: z.object({
-    amount: z.number(),
+    amount: MoneySchema,
     currency: z.string(),
   }).optional(),
   expected_close_date: z.string().optional(),
