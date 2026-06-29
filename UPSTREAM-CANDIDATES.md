@@ -15,3 +15,4 @@ This file tracks commits that are genuinely upstreamable — generic fixes and i
 | Commit | Date | Summary | Why upstreamable |
 |--------|------|---------|------------------|
 | `ae8808d` | 2026-06-23 | Coerce `visible_to` to int (string enum → number) and validate activity `type` against the account's real activity-type keys | Both are generic correctness fixes for Pipedrive v2 validation 400s (Sentry PIPEDRIVE-MCP-C and -8). No MinorCo-specific behaviour. |
+| `df02c56` | 2026-06-29 | Coerce monetary/qty fields (deal/lead value, product price/cost/tax/qty/discount) to numbers via `z.coerce.number()` | Direct fix for issue #18 (numeric args sent as strings by some clients). IDs were already coerced; this closes the same gap on the remaining numeric write fields. Fully generic. |

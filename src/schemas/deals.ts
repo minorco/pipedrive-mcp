@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   IdSchema,
+  MoneySchema,
   LimitSchema,
   SearchLimitSchema,
   PageTokenSchema,
@@ -81,7 +82,7 @@ export const DealsCreateSchema = z.object({
   title: z.string().min(1).describe("Deal title"),
   person_id: z.coerce.number().int().positive().optional(),
   org_id: z.coerce.number().int().positive().optional(),
-  value: z.number().optional(),
+  value: MoneySchema.optional(),
   currency: z.string().optional(),
   pipeline_id: z.coerce.number().int().positive().optional(),
   stage_id: z.coerce.number().int().positive().optional(),
@@ -97,7 +98,7 @@ export const DealsUpdateSchema = z.object({
   title: z.string().optional(),
   person_id: z.coerce.number().int().positive().optional(),
   org_id: z.coerce.number().int().positive().optional(),
-  value: z.number().optional(),
+  value: MoneySchema.optional(),
   currency: z.string().optional(),
   pipeline_id: z.coerce.number().int().positive().optional(),
   stage_id: z.coerce.number().int().positive().optional(),
