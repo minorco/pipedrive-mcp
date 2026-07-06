@@ -188,6 +188,27 @@ async function handleDealProductsList(args: Record<string, unknown>): Promise<To
   return paginatedResult({ items: result.items, next_page_token: result.next_page_token, approx_count: result.approx_count, truncated: result.truncated, pagination_mode: result.pagination_mode });
 }
 
+/**
+ * Pipedrive recalculates a deal's value server-side when its products change;
+ * surface the fresh value so callers don't act on a stale one. Advisory only -
+ * returns undefined if the lookup fails.
+ */
+async function fetchDealValue(dealId: number): Promise<{ value: number; currency: string } | undefined> {
+  const { apiV2, rateLimiters } = getContext();
+  try {
+    const response = await rateLimiters.general.schedule(() =>
+      withRetry(() => apiV2.get<Record<string, unknown>>(`/deals/${dealId}`), {
+        label: `deal value refresh ${dealId}`,
+      }),
+    );
+    if (response.status !== 200) return undefined;
+    const deal = response.data.data;
+    return { value: deal.value as number, currency: deal.currency as string };
+  } catch {
+    return undefined;
+  }
+}
+
 async function handleDealProductsAdd(args: Record<string, unknown>): Promise<ToolResult> {
   const parsed = DealProductsAddSchema.safeParse(args);
   if (!parsed.success) return validationErrorResult("pipedrive_deal_products_add", parsed.error.message);
@@ -208,7 +229,7 @@ async function handleDealProductsAdd(args: Record<string, unknown>): Promise<Too
     withRetry(() => apiV2.post<Record<string, unknown>>(`/deals/${input.deal_id}/products`, body), { label: `pipedrive_deal_products_add ${input.deal_id}` }),
   );
   if (response.status !== 200 && response.status !== 201) return apiErrorResult(normalizeApiError(response, "pipedrive_deal_products_add", `POST /deals/${input.deal_id}/products`));
-  return successResult({ message: `Product ${input.product_id} added to deal ${input.deal_id}`, deal_product: response.data.data });
+  return successResult({ message: `Product ${input.product_id} added to deal ${input.deal_id}`, deal_product: response.data.data, deal_value: await fetchDealValue(input.deal_id) });
 }
 
 async function handleDealProductsUpdate(args: Record<string, unknown>): Promise<ToolResult> {
@@ -229,7 +250,7 @@ async function handleDealProductsUpdate(args: Record<string, unknown>): Promise<
     withRetry(() => apiV2.patch<Record<string, unknown>>(`/deals/${input.deal_id}/products/${input.deal_product_id}`, body), { label: `pipedrive_deal_products_update ${input.deal_product_id}` }),
   );
   if (response.status !== 200) return apiErrorResult(normalizeApiError(response, "pipedrive_deal_products_update", `PATCH /deals/${input.deal_id}/products/${input.deal_product_id}`));
-  return successResult({ message: `Deal product ${input.deal_product_id} updated`, deal_product: response.data.data });
+  return successResult({ message: `Deal product ${input.deal_product_id} updated`, deal_product: response.data.data, deal_value: await fetchDealValue(input.deal_id) });
 }
 
 async function handleDealProductsDelete(args: Record<string, unknown>): Promise<ToolResult> {
@@ -245,7 +266,7 @@ async function handleDealProductsDelete(args: Record<string, unknown>): Promise<
     withRetry(() => apiV2.del(`/deals/${input.deal_id}/products/${input.deal_product_id}`), { label: `pipedrive_deal_products_delete ${input.deal_product_id}` }),
   );
   if (response.status !== 200) return apiErrorResult(normalizeApiError(response, "pipedrive_deal_products_delete", `DELETE /deals/${input.deal_id}/products/${input.deal_product_id}`));
-  return successResult({ message: `Product ${input.deal_product_id} removed from deal ${input.deal_id}` });
+  return successResult({ message: `Product ${input.deal_product_id} removed from deal ${input.deal_id}`, deal_value: await fetchDealValue(input.deal_id) });
 }
 
 async function handleProductVariationsList(args: Record<string, unknown>): Promise<ToolResult> {
