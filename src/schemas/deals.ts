@@ -76,6 +76,7 @@ export const DealsMoveStageSchema = z.object({
   deal_id: IdSchema.describe("The deal ID to move"),
   stage_id: IdSchema.describe("The target stage ID"),
   pipeline_id: z.coerce.number().int().positive().optional().describe("Target pipeline ID (if moving across pipelines)"),
+  dry_run: DryRunSchema,
 }).strict();
 
 export const DealsCreateSchema = z.object({

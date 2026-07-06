@@ -17,7 +17,7 @@
 - Use Zod .strict() on all tool input schemas
 - v2 activities use participants array, not person_id (which is read-only)
 - v2 custom field writes must nest fields in a custom_fields object
-- All field metadata endpoints are v1 (v2 field routes are not available on all instances)
+- All field metadata endpoints are v1 (v2 field routes are not available on all instances). Exception: required/important field config only exists on v2 dealFields (`include_fields=important_fields,required_fields`) — services/field-requirements.ts fetches it and degrades to no-check (returns null) when v2 fields are unavailable
 
 ## Testing
 - vitest for all tests

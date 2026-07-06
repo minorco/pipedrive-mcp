@@ -6,6 +6,7 @@ import { withRetry } from "../pipedrive/retries.js";
 import { normalizeApiError } from "../pipedrive/error-normalizer.js";
 import { buildPaginationParams, buildPaginatedResult } from "../pipedrive/pagination.js";
 import { resolveCustomFieldsByKey, resolveCustomFieldsByName, resolveCustomFieldsInResponse } from "../services/custom-fields.js";
+import { checkDealFieldRequirements, hasMissingFields, getDealFieldRequirements, computeMissingFields, FIELD_REQUIREMENTS_NOTE } from "../services/field-requirements.js";
 import { buildDealSummary } from "../services/summaries.js";
 import { compactDeal } from "../presenters/entities.js";
 import { formatDealSummary } from "../presenters/summaries.js";
@@ -192,6 +193,34 @@ async function handleDealsMoveStage(args: Record<string, unknown>): Promise<Tool
   const { apiV2, rateLimiters } = getContext();
   const input = parsed.data;
 
+  if (input.dry_run) {
+    const dealResponse = await rateLimiters.general.schedule(() =>
+      withRetry(() => apiV2.get<Record<string, unknown>>(`/deals/${input.deal_id}`), {
+        label: `pipedrive_deals_move_stage dry_run ${input.deal_id}`,
+      }),
+    );
+    if (dealResponse.status !== 200) {
+      return apiErrorResult(normalizeApiError(dealResponse, "pipedrive_deals_move_stage", `GET /deals/${input.deal_id}`));
+    }
+
+    const fields = await getDealFieldRequirements();
+    const dryRun = buildDryRunResult(
+      "pipedrive_deals_move_stage",
+      "move_stage",
+      { deal_id: input.deal_id, stage_id: input.stage_id },
+      `Would move deal ${input.deal_id} to stage ${input.stage_id}`,
+    );
+    if (!fields) {
+      return successResult({ ...dryRun, field_requirements_unavailable: true });
+    }
+
+    const check = computeMissingFields(fields, dealResponse.data.data, { stageId: input.stage_id });
+    if (check.required_missing.length > 0 || check.important_missing.length > 0) {
+      check.note = FIELD_REQUIREMENTS_NOTE;
+    }
+    return successResult({ ...dryRun, field_requirements: check });
+  }
+
   const body: Record<string, unknown> = { stage_id: input.stage_id };
   if (input.pipeline_id) body.pipeline_id = input.pipeline_id;
 
@@ -205,9 +234,12 @@ async function handleDealsMoveStage(args: Record<string, unknown>): Promise<Tool
     return apiErrorResult(normalizeApiError(response, "pipedrive_deals_move_stage", `PATCH /deals/${input.deal_id}`));
   }
 
+  const check = await checkDealFieldRequirements(response.data.data, { stageId: input.stage_id });
+
   return successResult({
     message: `Deal ${input.deal_id} moved to stage ${input.stage_id}`,
     deal: compactDeal(response.data.data),
+    field_requirements: hasMissingFields(check) ? check : undefined,
   });
 }
 
@@ -261,9 +293,17 @@ async function handleDealsCreate(args: Record<string, unknown>): Promise<ToolRes
     return apiErrorResult(normalizeApiError(response, "pipedrive_deals_create", "POST /deals"));
   }
 
+  const created = response.data.data;
+  const check = await checkDealFieldRequirements(created, {});
+  const valueUnset = !created.value;
+
   return successResult({
     message: "Deal created successfully",
-    deal: compactDeal(response.data.data),
+    deal: compactDeal(created),
+    field_requirements: hasMissingFields(check) ? check : undefined,
+    value_hint: valueUnset
+      ? "Deal value is not set. If this deal will carry products, add them with pipedrive_deal_products_add and Pipedrive will calculate the value; otherwise set value with pipedrive_deals_update."
+      : undefined,
   });
 }
 
@@ -317,9 +357,19 @@ async function handleDealsUpdate(args: Record<string, unknown>): Promise<ToolRes
     return apiErrorResult(normalizeApiError(response, "pipedrive_deals_update", `PATCH /deals/${input.deal_id}`));
   }
 
+  // Stage or status changes can trip UI-required fields - only check then
+  const check =
+    input.stage_id || input.status
+      ? await checkDealFieldRequirements(response.data.data, {
+          stageId: input.stage_id,
+          status: input.status,
+        })
+      : null;
+
   return successResult({
     message: `Deal ${input.deal_id} updated`,
     deal: compactDeal(response.data.data),
+    field_requirements: hasMissingFields(check) ? check : undefined,
   });
 }
 
@@ -380,19 +430,22 @@ const tools: ToolDefinition[] = [
   },
   {
     name: "pipedrive_deals_move_stage",
-    description: "Move a deal to a different stage (and optionally pipeline).",
+    description:
+      "Move a deal to a different stage (and optionally pipeline). Prefer dry_run: true first - it previews the fields Pipedrive marks required or important at the target stage without moving the deal. The move response also flags missing required/important fields (the API does not enforce them). Populate dropdown fields from the returned options when the value is obvious; ask the user for text fields.",
     inputSchema: zodToJsonSchema(DealsMoveStageSchema),
     handler: handleDealsMoveStage,
   },
   {
     name: "pipedrive_deals_create",
-    description: "Create a new deal. Supports custom fields by name or key.",
+    description:
+      "Create a new deal. Supports custom fields by name or key. The response flags any fields Pipedrive marks required or important at the deal's stage - populate them (dropdowns from the returned options; ask the user for text fields) rather than leaving them empty.",
     inputSchema: zodToJsonSchema(DealsCreateSchema),
     handler: handleDealsCreate,
   },
   {
     name: "pipedrive_deals_update",
-    description: "Update an existing deal. Supports custom fields by name or key.",
+    description:
+      "Update an existing deal. Supports custom fields by name or key. When changing stage or status (won/lost), the response flags fields Pipedrive marks required or important for that stage/status - populate them rather than leaving them empty.",
     inputSchema: zodToJsonSchema(DealsUpdateSchema),
     handler: handleDealsUpdate,
   },

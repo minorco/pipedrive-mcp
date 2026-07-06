@@ -10,6 +10,7 @@ import {
   getToolByName,
 } from "../../src/mcp/register-tools.js";
 import { clearFieldCache } from "../../src/services/custom-fields.js";
+import { clearFieldRequirementsCache } from "../../src/services/field-requirements.js";
 import { setLogLevel } from "../../src/logging.js";
 import type { ToolResult } from "../../src/mcp/tool-result.js";
 
@@ -56,6 +57,7 @@ export async function setupTestContext(): Promise<void> {
   resetConfig();
   clearToolRegistry();
   clearFieldCache();
+  clearFieldRequirementsCache();
 
   // Import tool modules (they self-register via registerTools when imported)
   await import("../../src/tools/index.js");
@@ -83,6 +85,7 @@ export async function setupOAuthTestContext(): Promise<void> {
   resetConfig();
   clearToolRegistry();
   clearFieldCache();
+  clearFieldRequirementsCache();
 
   await import("../../src/tools/index.js");
 
