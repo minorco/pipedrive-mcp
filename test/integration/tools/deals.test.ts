@@ -136,6 +136,27 @@ describe("pipedrive_deals_create", () => {
     expect(sentVisibleTo).toBe(7);
     expect(typeof sentVisibleTo).toBe("number");
   });
+
+  it("passes owner_id through to the API", async () => {
+    const fixture = fixturesV2("deals-create.json");
+
+    let sentOwnerId: unknown;
+    nock(BASE_URL)
+      .post("/api/v2/deals", (body: Record<string, unknown>) => {
+        sentOwnerId = body.owner_id;
+        return true;
+      })
+      .query(true)
+      .reply(201, fixture);
+
+    const { result } = await callTool("pipedrive_deals_create", {
+      title: "Acme Corp - Enterprise Package",
+      owner_id: 202,
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(sentOwnerId).toBe(202);
+  });
 });
 
 describe("pipedrive_deals_update", () => {
@@ -158,6 +179,27 @@ describe("pipedrive_deals_update", () => {
     const deal = parsed.deal as Record<string, unknown>;
     expect(deal.id).toBe(117);
     expect(deal.title).toBe("Acme Corp - Enterprise Package Updated");
+  });
+
+  it("passes owner_id through to the API to reassign the deal", async () => {
+    const fixture = fixturesV2("deals-update.json");
+
+    let sentOwnerId: unknown;
+    nock(BASE_URL)
+      .patch("/api/v2/deals/117", (body: Record<string, unknown>) => {
+        sentOwnerId = body.owner_id;
+        return true;
+      })
+      .query(true)
+      .reply(200, fixture);
+
+    const { result } = await callTool("pipedrive_deals_update", {
+      deal_id: 117,
+      owner_id: 202,
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(sentOwnerId).toBe(202);
   });
 });
 
