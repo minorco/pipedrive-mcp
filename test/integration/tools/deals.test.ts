@@ -157,6 +157,26 @@ describe("pipedrive_deals_create", () => {
     expect(result.isError).toBeFalsy();
     expect(sentOwnerId).toBe(202);
   });
+
+  it("omits owner_id from the body when not specified, so Pipedrive defaults to the authenticated user", async () => {
+    const fixture = fixturesV2("deals-create.json");
+
+    let sentBody: Record<string, unknown> = {};
+    nock(BASE_URL)
+      .post("/api/v2/deals", (body: Record<string, unknown>) => {
+        sentBody = body;
+        return true;
+      })
+      .query(true)
+      .reply(201, fixture);
+
+    const { result } = await callTool("pipedrive_deals_create", {
+      title: "Acme Corp - Enterprise Package",
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect("owner_id" in sentBody).toBe(false);
+  });
 });
 
 describe("pipedrive_deals_update", () => {
