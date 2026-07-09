@@ -40,7 +40,7 @@ Uses the `dev-session` skill (development plugin). Run session-start before edit
 - Deploy:
   - Push fork `integration` → `notify-cloudflare` workflow dispatches to the worker repo → `sync-and-deploy` re-runs the fork test gate, syncs the fork into the worker, and pushes worker `dev` → Cloudflare auto-deploys the STAGING worker (`pipedrive-mcp-staging`).
   - Promote to LIVE only via the worker repo's `promote-to-live` workflow (`gh workflow run promote-to-live.yml --repo minorco/pipedrive-mcp-cloudflare`), which merges worker `dev` → `main` → deploys the LIVE worker (`pipedrive-mcp`). Always confirm explicitly before promoting.
-  - Fork `main` is intentionally behind `integration`; it only advances on promote. Topic branches → merge into `integration`.
+  - Fork `main` is intentionally behind `integration`; it only advances on promote. The promote workflow does NOT move it — after a successful promote, fast-forward manually: `git checkout main && git merge --ff-only integration && git push origin main`. Topic branches → merge into `integration`.
 - Contribution policy: this fork is MinorCo's own maintained downstream line. Do NOT open PRs to comma-compliance/pipedrive-mcp unless Warwick explicitly asks. comma-compliance is a passive `upstream` remote; pull from it manually and review before folding in. Log upstreamable commits in `UPSTREAM-CANDIDATES.md`.
 - Protected branches: the following fork branches back OPEN PRs to comma-compliance/pipedrive-mcp. NEVER delete them in a branch-cleanup or fork-sync pass. Deleting the head branch auto-closes the upstream PR (this happened once on 2026-06-22 and closed all seven at once). Do not prune them until the PR is merged or Warwick says to abandon it:
   - `feat/oauth-bearer-auth` (PR #10)
