@@ -259,7 +259,7 @@ export function reverseResolveFieldValue(
   }
 
   if (!field.optionsById) {
-    return { value, display_value: String(value) };
+    return { value, display_value: formatPlainValue(value) };
   }
 
   if (typeof value === "number") {
@@ -281,7 +281,19 @@ export function reverseResolveFieldValue(
     }
   }
 
-  return { value, display_value: String(value) };
+  return { value, display_value: formatPlainValue(value) };
+}
+
+function formatPlainValue(value: unknown): string {
+  if (typeof value === "object" && value !== null) {
+    // Monetary/range fields return objects; "[object Object]" helps nobody
+    const v = value as Record<string, unknown>;
+    if ("value" in v && v.value !== null && v.value !== undefined) {
+      return v.currency ? `${v.value} ${v.currency}` : String(v.value);
+    }
+    return JSON.stringify(value);
+  }
+  return String(value);
 }
 
 export async function resolveCustomFieldsInResponse(

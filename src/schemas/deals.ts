@@ -82,6 +82,7 @@ export const DealsMoveStageSchema = z.object({
 export const DealsCreateSchema = z.object({
   title: z.string().min(1).describe("Deal title"),
   owner_id: z.coerce.number().int().positive().optional().describe("User ID to own the deal (defaults to the authenticated user)"),
+  label_ids: z.array(z.coerce.number().int().positive()).optional().describe("Deal label IDs (built-in Label field; get IDs from field_requirements options or the dealFields Label options)"),
   person_id: z.coerce.number().int().positive().optional(),
   org_id: z.coerce.number().int().positive().optional(),
   value: MoneySchema.optional(),
@@ -99,6 +100,7 @@ export const DealsUpdateSchema = z.object({
   deal_id: IdSchema.describe("The deal ID to update"),
   title: z.string().optional(),
   owner_id: z.coerce.number().int().positive().optional().describe("User ID to reassign the deal to"),
+  label_ids: z.array(z.coerce.number().int().positive()).optional().describe("Deal label IDs (built-in Label field; get IDs from field_requirements options or the dealFields Label options)"),
   person_id: z.coerce.number().int().positive().optional(),
   org_id: z.coerce.number().int().positive().optional(),
   value: MoneySchema.optional(),

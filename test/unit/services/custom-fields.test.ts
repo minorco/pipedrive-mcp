@@ -153,3 +153,33 @@ describe("reverseResolveFieldValue", () => {
     );
   });
 });
+
+describe("reverseResolveFieldValue object values", () => {
+  it("formats monetary objects as value + currency instead of [object Object]", () => {
+    const field: FieldMetadata = {
+      key: "b049293d593a4d0b041269bc844d4455712cafaa",
+      name: "Commission",
+      fieldType: "monetary",
+      entityType: "deal",
+      options: null,
+      optionsByLabelLC: null,
+      optionsById: null,
+    };
+    const { display_value } = reverseResolveFieldValue(field, { value: 600, currency: "USD" });
+    expect(display_value).toBe("600 USD");
+  });
+
+  it("JSON-stringifies other object values", () => {
+    const field: FieldMetadata = {
+      key: "somekey",
+      name: "Address",
+      fieldType: "address",
+      entityType: "deal",
+      options: null,
+      optionsByLabelLC: null,
+      optionsById: null,
+    };
+    const { display_value } = reverseResolveFieldValue(field, { locality: "Wellington" });
+    expect(display_value).toBe('{"locality":"Wellington"}');
+  });
+});
