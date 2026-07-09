@@ -99,7 +99,8 @@ export async function getDealFieldRequirements(): Promise<DealFieldRequirement[]
         const rawOptions = raw.options as Array<{ id: number; label: string }> | undefined;
         fields.push({
           key: (raw.field_code as string) ?? (raw.key as string),
-          name: (raw.name as string) ?? "",
+          // v2 dealFields uses field_name (v1 uses name)
+          name: (raw.field_name as string) ?? (raw.name as string) ?? "",
           fieldType: (raw.field_type as string) ?? "unknown",
           options: Array.isArray(rawOptions)
             ? rawOptions.map((o) => ({ id: o.id, label: o.label }))
