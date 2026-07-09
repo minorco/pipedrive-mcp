@@ -3,49 +3,105 @@
   "data": [
     {
       "field_code": "title",
-      "name": "Title",
       "field_type": "varchar",
-      "important_fields": { "enabled": false, "stage_ids": [] },
-      "required_fields": { "enabled": false, "stage_ids": [], "statuses": {} }
+      "important_fields": {
+        "enabled": false,
+        "stage_ids": []
+      },
+      "required_fields": {
+        "enabled": false,
+        "stage_ids": [],
+        "statuses": {}
+      },
+      "field_name": "Title"
     },
     {
       "field_code": "value",
-      "name": "Value",
       "field_type": "monetary",
-      "important_fields": { "enabled": false, "stage_ids": [] },
-      "required_fields": { "enabled": false, "stage_ids": [], "statuses": {} }
+      "important_fields": {
+        "enabled": false,
+        "stage_ids": []
+      },
+      "required_fields": {
+        "enabled": false,
+        "stage_ids": [],
+        "statuses": {}
+      },
+      "field_name": "Value"
     },
     {
       "field_code": "f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5",
-      "name": "Deal Source",
       "field_type": "enum",
       "options": [
-        { "id": 401, "label": "Referral" },
-        { "id": 402, "label": "Outbound" }
+        {
+          "id": 401,
+          "label": "Referral"
+        },
+        {
+          "id": 402,
+          "label": "Outbound"
+        }
       ],
-      "important_fields": { "enabled": false, "stage_ids": [] },
-      "required_fields": { "enabled": true, "stage_ids": [2], "statuses": {} }
+      "important_fields": {
+        "enabled": false,
+        "stage_ids": []
+      },
+      "required_fields": {
+        "enabled": true,
+        "stage_ids": [
+          2
+        ],
+        "statuses": {}
+      },
+      "field_name": "Deal Source"
     },
     {
       "field_code": "a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6",
-      "name": "Kickoff Notes",
       "field_type": "text",
-      "important_fields": { "enabled": false, "stage_ids": [] },
-      "required_fields": { "enabled": true, "stage_ids": [], "statuses": {} }
+      "important_fields": {
+        "enabled": false,
+        "stage_ids": []
+      },
+      "required_fields": {
+        "enabled": true,
+        "stage_ids": [],
+        "statuses": {}
+      },
+      "field_name": "Kickoff Notes"
     },
     {
       "field_code": "b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7",
-      "name": "Loss Reason Detail",
       "field_type": "varchar",
-      "important_fields": { "enabled": false, "stage_ids": [] },
-      "required_fields": { "enabled": true, "stage_ids": [], "statuses": { "1": ["lost"] } }
+      "important_fields": {
+        "enabled": false,
+        "stage_ids": []
+      },
+      "required_fields": {
+        "enabled": true,
+        "stage_ids": [],
+        "statuses": {
+          "1": [
+            "lost"
+          ]
+        }
+      },
+      "field_name": "Loss Reason Detail"
     },
     {
       "field_code": "c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8",
-      "name": "Budget",
       "field_type": "double",
-      "important_fields": { "enabled": true, "stage_ids": [2] },
-      "required_fields": { "enabled": false, "stage_ids": [], "statuses": {} }
+      "important_fields": {
+        "enabled": true,
+        "stage_ids": [
+          2
+        ]
+      },
+      "required_fields": {
+        "enabled": false,
+        "stage_ids": [],
+        "statuses": {}
+      },
+      "field_name": "Budget"
     }
   ],
   "additional_data": {}
