@@ -193,7 +193,12 @@ async function handleDealProductsList(args: Record<string, unknown>): Promise<To
  * surface the fresh value so callers don't act on a stale one. Advisory only -
  * returns undefined if the lookup fails.
  */
-async function fetchDealValue(dealId: number): Promise<{ value: number; currency: string } | undefined> {
+const DEAL_VALUE_NOTE =
+  "Pipedrive recalculates deal value from attached products asynchronously; re-fetch the deal if this value looks stale.";
+
+async function fetchDealValue(
+  dealId: number,
+): Promise<{ value: number; currency: string; note: string } | undefined> {
   const { apiV2, rateLimiters } = getContext();
   try {
     const response = await rateLimiters.general.schedule(() =>
@@ -203,7 +208,7 @@ async function fetchDealValue(dealId: number): Promise<{ value: number; currency
     );
     if (response.status !== 200) return undefined;
     const deal = response.data.data;
-    return { value: deal.value as number, currency: deal.currency as string };
+    return { value: deal.value as number, currency: deal.currency as string, note: DEAL_VALUE_NOTE };
   } catch {
     return undefined;
   }

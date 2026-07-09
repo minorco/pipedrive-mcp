@@ -231,6 +231,9 @@ describe("pipedrive_deal_products_add", () => {
 
     expect(result.isError).toBeFalsy();
     const parsed = data as Record<string, unknown>;
-    expect(parsed.deal_value).toEqual({ value: 12000, currency: "USD" });
+    const dealValue = parsed.deal_value as Record<string, unknown>;
+    expect(dealValue.value).toBe(12000);
+    expect(dealValue.currency).toBe("USD");
+    expect(String(dealValue.note)).toContain("asynchronously");
   });
 });

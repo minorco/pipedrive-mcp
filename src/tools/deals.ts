@@ -254,6 +254,7 @@ async function handleDealsCreate(args: Record<string, unknown>): Promise<ToolRes
 
   const body: Record<string, unknown> = { title: input.title };
   if (input.owner_id) body.owner_id = input.owner_id;
+  if (input.label_ids) body.label_ids = input.label_ids;
   if (input.person_id) body.person_id = input.person_id;
   if (input.org_id) body.org_id = input.org_id;
   if (input.value !== undefined) body.value = input.value;
@@ -320,6 +321,7 @@ async function handleDealsUpdate(args: Record<string, unknown>): Promise<ToolRes
   const body: Record<string, unknown> = {};
   if (input.title) body.title = input.title;
   if (input.owner_id) body.owner_id = input.owner_id;
+  if (input.label_ids) body.label_ids = input.label_ids;
   if (input.person_id) body.person_id = input.person_id;
   if (input.org_id) body.org_id = input.org_id;
   if (input.value !== undefined) body.value = input.value;
