@@ -1,6 +1,6 @@
 # pipedrive-mcp
 
-A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server for [Pipedrive CRM](https://www.pipedrive.com). Provides 93 tools covering deals, persons, organizations, activities, notes, pipelines, products, leads, files, mail, users, filters, custom fields, webhooks, and shortcut tools for common CRM workflows.
+A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server for [Pipedrive CRM](https://www.pipedrive.com). Provides 124 tools covering deals, persons, organizations, activities, notes, pipelines, products, projects, leads, files, mail, users, filters, custom fields, webhooks, and shortcut tools for common CRM workflows.
 
 ## Why this exists
 
@@ -189,8 +189,8 @@ Read-only. Pass a template's ID as `template_id` to `pipedrive_projects_create` 
 ### Leads (6 tools)
 `pipedrive_leads_list` `pipedrive_leads_get` `pipedrive_leads_create` `pipedrive_leads_update` `pipedrive_leads_delete` `pipedrive_leads_search`
 
-### Mail (8 tools)
-`pipedrive_mail_threads_list` `pipedrive_mail_threads_get` `pipedrive_mail_thread_messages_list` `pipedrive_mail_messages_get` `pipedrive_mail_threads_update` `pipedrive_mail_threads_delete` `pipedrive_deal_mail_messages_list` `pipedrive_person_mail_messages_list`
+### Mail (9 tools)
+`pipedrive_mail_threads_list` `pipedrive_mail_threads_get` `pipedrive_mail_thread_messages_list` `pipedrive_mail_messages_get` `pipedrive_mail_threads_update` `pipedrive_mail_threads_delete` `pipedrive_deal_mail_messages_list` `pipedrive_person_mail_messages_list` `pipedrive_organization_mail_messages_list`
 
 Read and manage synced email threads and messages from Pipedrive's mailbox. List threads by folder (inbox, drafts, sent, archive), read individual messages with optional body content, link threads to deals or leads, and look up mail associated with a specific deal or person.
 
