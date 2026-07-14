@@ -1,0 +1,8 @@
+{
+  "success": true,
+  "data": [
+    { "id": 1, "name": "Client Delivery", "order_nr": 1, "add_time": "2026-05-01T00:00:00Z", "update_time": "2026-06-01T00:00:00Z" },
+    { "id": 2, "name": "Internal Ops", "order_nr": 2, "add_time": "2026-05-02T00:00:00Z", "update_time": "2026-05-02T00:00:00Z" }
+  ],
+  "additional_data": null
+}

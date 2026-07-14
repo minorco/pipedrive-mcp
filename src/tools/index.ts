@@ -12,6 +12,8 @@ import "./filters.js";
 import "./products.js";
 import "./projects.js";
 import "./project-tasks.js";
+import "./project-boards.js";
+import "./project-templates.js";
 import "./files.js";
 import "./leads.js";
 import "./webhooks.js";

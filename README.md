@@ -176,6 +176,16 @@ Pipedrive Projects (kanban-style project management). Uses Pipedrive's BETA Proj
 
 Tasks inside Projects, including subtasks (`parent_task_id`) and milestones. These are distinct from the "task" activity type — use the Activities tools for those.
 
+### Project Boards & Phases (10 tools)
+`pipedrive_project_boards_list` `pipedrive_project_boards_get` `pipedrive_project_boards_create` `pipedrive_project_boards_update` `pipedrive_project_boards_delete` `pipedrive_project_phases_list` `pipedrive_project_phases_get` `pipedrive_project_phases_create` `pipedrive_project_phases_update` `pipedrive_project_phases_delete`
+
+Boards are to projects what pipelines are to deals; phases are the stages within a board (`pipedrive_project_phases_list` requires `board_id`).
+
+### Project Templates (2 tools)
+`pipedrive_project_templates_list` `pipedrive_project_templates_get`
+
+Read-only. Pass a template's ID as `template_id` to `pipedrive_projects_create` to instantiate it.
+
 ### Leads (6 tools)
 `pipedrive_leads_list` `pipedrive_leads_get` `pipedrive_leads_create` `pipedrive_leads_update` `pipedrive_leads_delete` `pipedrive_leads_search`
 
