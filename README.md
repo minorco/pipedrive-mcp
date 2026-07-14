@@ -171,6 +171,11 @@ docker run -e PIPEDRIVE_API_TOKEN=xxx -e PIPEDRIVE_COMPANY_DOMAIN=yourcompany pi
 
 Pipedrive Projects (kanban-style project management). Uses Pipedrive's BETA Projects API and requires the paid Projects add-on; accounts without it get a 403 with guidance. Projects support custom fields via `custom_fields` / `custom_fields_by_name` (see Custom Fields below with `entity_type: "project"`).
 
+### Project Tasks (5 tools)
+`pipedrive_project_tasks_list` `pipedrive_project_tasks_get` `pipedrive_project_tasks_create` `pipedrive_project_tasks_update` `pipedrive_project_tasks_delete`
+
+Tasks inside Projects, including subtasks (`parent_task_id`) and milestones. These are distinct from the "task" activity type — use the Activities tools for those.
+
 ### Leads (6 tools)
 `pipedrive_leads_list` `pipedrive_leads_get` `pipedrive_leads_create` `pipedrive_leads_update` `pipedrive_leads_delete` `pipedrive_leads_search`
 

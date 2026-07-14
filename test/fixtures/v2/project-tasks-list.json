@@ -1,0 +1,34 @@
+{
+  "success": true,
+  "data": [
+    {
+      "id": 401,
+      "title": "Draft sitemap",
+      "project_id": 1,
+      "parent_task_id": null,
+      "assignee_id": 22,
+      "done": 0,
+      "milestone": 0,
+      "due_date": "2026-07-25",
+      "marked_as_done_time": null,
+      "add_time": "2026-07-05T10:00:00Z",
+      "update_time": "2026-07-08T09:00:00Z"
+    },
+    {
+      "id": 402,
+      "title": "Design homepage",
+      "project_id": 1,
+      "parent_task_id": 401,
+      "assignee_id": 31,
+      "done": 1,
+      "milestone": 0,
+      "due_date": "2026-08-01",
+      "marked_as_done_time": "2026-07-12T04:20:00Z",
+      "add_time": "2026-07-05T10:05:00Z",
+      "update_time": "2026-07-12T04:20:00Z"
+    }
+  ],
+  "additional_data": {
+    "next_cursor": null
+  }
+}

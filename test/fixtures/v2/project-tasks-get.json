@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "data": {
+    "id": 401,
+    "title": "Draft sitemap",
+    "description": "Initial IA for the new site",
+    "project_id": 1,
+    "parent_task_id": null,
+    "assignee_id": 22,
+    "done": 0,
+    "milestone": 0,
+    "due_date": "2026-07-25",
+    "marked_as_done_time": null,
+    "add_time": "2026-07-05T10:00:00Z",
+    "update_time": "2026-07-08T09:00:00Z"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "data": {
+    "id": 403,
+    "title": "Content audit",
+    "description": null,
+    "project_id": 1,
+    "parent_task_id": 401,
+    "assignee_id": 22,
+    "done": 0,
+    "milestone": 1,
+    "due_date": "2026-07-30",
+    "marked_as_done_time": null,
+    "add_time": "2026-07-14T01:20:00Z",
+    "update_time": "2026-07-14T01:20:00Z"
+  }
+}
