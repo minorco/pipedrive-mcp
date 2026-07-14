@@ -10,6 +10,7 @@ import "./custom-fields.js";
 import "./users.js";
 import "./filters.js";
 import "./products.js";
+import "./projects.js";
 import "./files.js";
 import "./leads.js";
 import "./webhooks.js";

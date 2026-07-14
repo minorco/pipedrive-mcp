@@ -1,0 +1,24 @@
+{
+  "success": true,
+  "data": {
+    "id": 3,
+    "title": "Client Onboarding Automation",
+    "description": null,
+    "status": "open",
+    "board_id": 1,
+    "phase_id": 1,
+    "owner_id": 22,
+    "start_date": null,
+    "end_date": null,
+    "deal_ids": [302],
+    "person_ids": [],
+    "org_ids": [],
+    "label_ids": [],
+    "archive_time": null,
+    "add_time": "2026-07-14T01:00:00Z",
+    "update_time": "2026-07-14T01:00:00Z",
+    "custom_fields": {
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01": 11
+    }
+  }
+}

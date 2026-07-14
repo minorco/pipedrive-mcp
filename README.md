@@ -166,6 +166,11 @@ docker run -e PIPEDRIVE_API_TOKEN=xxx -e PIPEDRIVE_COMPANY_DOMAIN=yourcompany pi
 ### Products (15 tools)
 `pipedrive_products_list` `pipedrive_products_get` `pipedrive_products_create` `pipedrive_products_update` `pipedrive_products_delete` `pipedrive_products_search` `pipedrive_product_variations_list` `pipedrive_product_variations_create` `pipedrive_product_variations_update` `pipedrive_product_variations_delete` `pipedrive_product_deals_list` `pipedrive_deal_products_list` `pipedrive_deal_products_add` `pipedrive_deal_products_update` `pipedrive_deal_products_delete`
 
+### Projects (13 tools)
+`pipedrive_projects_list` `pipedrive_projects_get` `pipedrive_projects_search` `pipedrive_projects_create` `pipedrive_projects_update` `pipedrive_projects_delete` `pipedrive_projects_archive` `pipedrive_projects_changelog` `pipedrive_projects_permitted_users` `pipedrive_project_activities_list` `pipedrive_project_groups_list` `pipedrive_project_plan_get` `pipedrive_project_plan_update`
+
+Pipedrive Projects (kanban-style project management). Uses Pipedrive's BETA Projects API and requires the paid Projects add-on; accounts without it get a 403 with guidance. Projects support custom fields via `custom_fields` / `custom_fields_by_name` (see Custom Fields below with `entity_type: "project"`).
+
 ### Leads (6 tools)
 `pipedrive_leads_list` `pipedrive_leads_get` `pipedrive_leads_create` `pipedrive_leads_update` `pipedrive_leads_delete` `pipedrive_leads_search`
 

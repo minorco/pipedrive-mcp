@@ -1,0 +1,42 @@
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "title": "Website Redesign",
+      "status": "open",
+      "board_id": 1,
+      "phase_id": 2,
+      "owner_id": 22,
+      "start_date": "2026-07-01",
+      "end_date": "2026-09-30",
+      "deal_ids": [301],
+      "person_ids": [15],
+      "org_ids": [7],
+      "label_ids": [],
+      "archive_time": null,
+      "add_time": "2026-06-28T21:04:10Z",
+      "update_time": "2026-07-10T02:15:44Z"
+    },
+    {
+      "id": 2,
+      "title": "Zapier Migration",
+      "status": "open",
+      "board_id": 1,
+      "phase_id": 1,
+      "owner_id": 22,
+      "start_date": "2026-07-15",
+      "end_date": null,
+      "deal_ids": [],
+      "person_ids": [],
+      "org_ids": [9],
+      "label_ids": [4],
+      "archive_time": null,
+      "add_time": "2026-07-02T09:30:00Z",
+      "update_time": "2026-07-08T11:41:02Z"
+    }
+  ],
+  "additional_data": {
+    "next_cursor": null
+  }
+}
