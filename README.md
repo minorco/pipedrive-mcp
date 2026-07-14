@@ -1,6 +1,6 @@
 # pipedrive-mcp
 
-A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server for [Pipedrive CRM](https://www.pipedrive.com). Provides 93 tools covering deals, persons, organizations, activities, notes, pipelines, products, leads, files, mail, users, filters, custom fields, webhooks, and shortcut tools for common CRM workflows.
+A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server for [Pipedrive CRM](https://www.pipedrive.com). Provides 124 tools covering deals, persons, organizations, activities, notes, pipelines, products, projects, leads, files, mail, users, filters, custom fields, webhooks, and shortcut tools for common CRM workflows.
 
 ## Why this exists
 
@@ -166,11 +166,31 @@ docker run -e PIPEDRIVE_API_TOKEN=xxx -e PIPEDRIVE_COMPANY_DOMAIN=yourcompany pi
 ### Products (15 tools)
 `pipedrive_products_list` `pipedrive_products_get` `pipedrive_products_create` `pipedrive_products_update` `pipedrive_products_delete` `pipedrive_products_search` `pipedrive_product_variations_list` `pipedrive_product_variations_create` `pipedrive_product_variations_update` `pipedrive_product_variations_delete` `pipedrive_product_deals_list` `pipedrive_deal_products_list` `pipedrive_deal_products_add` `pipedrive_deal_products_update` `pipedrive_deal_products_delete`
 
+### Projects (13 tools)
+`pipedrive_projects_list` `pipedrive_projects_get` `pipedrive_projects_search` `pipedrive_projects_create` `pipedrive_projects_update` `pipedrive_projects_delete` `pipedrive_projects_archive` `pipedrive_projects_changelog` `pipedrive_projects_permitted_users` `pipedrive_project_activities_list` `pipedrive_project_groups_list` `pipedrive_project_plan_get` `pipedrive_project_plan_update`
+
+Pipedrive Projects (kanban-style project management). Uses Pipedrive's BETA Projects API and requires the paid Projects add-on; accounts without it get a 403 with guidance. Projects support custom fields via `custom_fields` / `custom_fields_by_name` (see Custom Fields below with `entity_type: "project"`).
+
+### Project Tasks (5 tools)
+`pipedrive_project_tasks_list` `pipedrive_project_tasks_get` `pipedrive_project_tasks_create` `pipedrive_project_tasks_update` `pipedrive_project_tasks_delete`
+
+Tasks inside Projects, including subtasks (`parent_task_id`) and milestones. These are distinct from the "task" activity type — use the Activities tools for those.
+
+### Project Boards & Phases (10 tools)
+`pipedrive_project_boards_list` `pipedrive_project_boards_get` `pipedrive_project_boards_create` `pipedrive_project_boards_update` `pipedrive_project_boards_delete` `pipedrive_project_phases_list` `pipedrive_project_phases_get` `pipedrive_project_phases_create` `pipedrive_project_phases_update` `pipedrive_project_phases_delete`
+
+Boards are to projects what pipelines are to deals; phases are the stages within a board (`pipedrive_project_phases_list` requires `board_id`).
+
+### Project Templates (2 tools)
+`pipedrive_project_templates_list` `pipedrive_project_templates_get`
+
+Read-only. Pass a template's ID as `template_id` to `pipedrive_projects_create` to instantiate it.
+
 ### Leads (6 tools)
 `pipedrive_leads_list` `pipedrive_leads_get` `pipedrive_leads_create` `pipedrive_leads_update` `pipedrive_leads_delete` `pipedrive_leads_search`
 
-### Mail (8 tools)
-`pipedrive_mail_threads_list` `pipedrive_mail_threads_get` `pipedrive_mail_thread_messages_list` `pipedrive_mail_messages_get` `pipedrive_mail_threads_update` `pipedrive_mail_threads_delete` `pipedrive_deal_mail_messages_list` `pipedrive_person_mail_messages_list`
+### Mail (9 tools)
+`pipedrive_mail_threads_list` `pipedrive_mail_threads_get` `pipedrive_mail_thread_messages_list` `pipedrive_mail_messages_get` `pipedrive_mail_threads_update` `pipedrive_mail_threads_delete` `pipedrive_deal_mail_messages_list` `pipedrive_person_mail_messages_list` `pipedrive_organization_mail_messages_list`
 
 Read and manage synced email threads and messages from Pipedrive's mailbox. List threads by folder (inbox, drafts, sent, archive), read individual messages with optional body content, link threads to deals or leads, and look up mail associated with a specific deal or person.
 

@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "data": [
+    {
+      "item_id": 401,
+      "item_type": "task",
+      "phase_id": 2,
+      "group_id": 12
+    },
+    {
+      "item_id": 900,
+      "item_type": "activity",
+      "phase_id": 1,
+      "group_id": null
+    }
+  ]
+}

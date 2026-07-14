@@ -14,7 +14,7 @@ const fixturesV1 = (name: string) =>
 // Create/update validate the supplied type against /activityTypes. Mock it so
 // those handlers can resolve the type without hitting the network.
 const mockActivityTypes = () =>
-  nock(BASE_URL).get("/v1/activityTypes").query(true).reply(200, fixturesV1("activityTypes-list.json"));
+  nock(BASE_URL).get("/api/v1/activityTypes").query(true).reply(200, fixturesV1("activityTypes-list.json"));
 
 beforeAll(async () => {
   await setupTestContext();
@@ -196,7 +196,7 @@ describe("pipedrive_activity_types_list", () => {
     const fixture = fixturesV1("activityTypes-list.json");
 
     nock(BASE_URL)
-      .get("/v1/activityTypes")
+      .get("/api/v1/activityTypes")
       .query(true)
       .reply(200, fixture);
 

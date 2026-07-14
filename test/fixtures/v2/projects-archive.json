@@ -1,0 +1,19 @@
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "title": "Website Redesign",
+    "status": "open",
+    "board_id": 1,
+    "phase_id": 2,
+    "owner_id": 22,
+    "start_date": "2026-07-01",
+    "end_date": "2026-09-30",
+    "deal_ids": [301],
+    "person_ids": [15],
+    "org_ids": [7],
+    "label_ids": [],
+    "archive_time": "2026-07-14T01:10:00Z",
+    "update_time": "2026-07-14T01:10:00Z"
+  }
+}

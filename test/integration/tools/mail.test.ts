@@ -22,7 +22,7 @@ describe("pipedrive_mail_threads_list", () => {
     const fixture = fixturesV1("mail-threads-list.json");
 
     nock(BASE_URL)
-      .get("/v1/mailbox/mailThreads")
+      .get("/api/v1/mailbox/mailThreads")
       .query(true)
       .reply(200, fixture);
 
@@ -48,7 +48,7 @@ describe("pipedrive_mail_threads_list", () => {
     const fixture = fixturesV1("mail-threads-list.json");
 
     const scope = nock(BASE_URL)
-      .get("/v1/mailbox/mailThreads")
+      .get("/api/v1/mailbox/mailThreads")
       .query((q) => q.folder === "inbox")
       .reply(200, fixture);
 
@@ -64,7 +64,7 @@ describe("pipedrive_mail_threads_get", () => {
     const fixture = fixturesV1("mail-threads-get.json");
 
     nock(BASE_URL)
-      .get("/v1/mailbox/mailThreads/701")
+      .get("/api/v1/mailbox/mailThreads/701")
       .query(true)
       .reply(200, fixture);
 
@@ -88,7 +88,7 @@ describe("pipedrive_mail_thread_messages_list", () => {
     const fixture = fixturesV1("mail-thread-messages-list.json");
 
     nock(BASE_URL)
-      .get("/v1/mailbox/mailThreads/701/mailMessages")
+      .get("/api/v1/mailbox/mailThreads/701/mailMessages")
       .query(true)
       .reply(200, fixture);
 
@@ -108,7 +108,7 @@ describe("pipedrive_mail_thread_messages_list", () => {
     const fixture = fixturesV1("mail-thread-messages-list.json");
 
     nock(BASE_URL)
-      .get("/v1/mailbox/mailThreads/701/mailMessages")
+      .get("/api/v1/mailbox/mailThreads/701/mailMessages")
       .query((q) => q.include_body === "1")
       .reply(200, fixture);
 
@@ -126,7 +126,7 @@ describe("pipedrive_mail_thread_messages_list", () => {
     const fixture = fixturesV1("mail-thread-messages-list.json");
 
     nock(BASE_URL)
-      .get("/v1/mailbox/mailThreads/701/mailMessages")
+      .get("/api/v1/mailbox/mailThreads/701/mailMessages")
       .query(true)
       .reply(200, fixture);
 
@@ -148,7 +148,7 @@ describe("pipedrive_mail_messages_get", () => {
     const fixture = fixturesV1("mail-messages-get.json");
 
     nock(BASE_URL)
-      .get("/v1/mailbox/mailMessages/801")
+      .get("/api/v1/mailbox/mailMessages/801")
       .query(true)
       .reply(200, fixture);
 
@@ -167,7 +167,7 @@ describe("pipedrive_mail_messages_get", () => {
     const fixture = fixturesV1("mail-messages-get.json");
 
     const scope = nock(BASE_URL)
-      .get("/v1/mailbox/mailMessages/801")
+      .get("/api/v1/mailbox/mailMessages/801")
       .query((q) => q.include_body === "1")
       .reply(200, fixture);
 
@@ -188,7 +188,7 @@ describe("pipedrive_mail_threads_update", () => {
     const fixture = fixturesV1("mail-threads-update.json");
 
     nock(BASE_URL)
-      .put("/v1/mailbox/mailThreads/701")
+      .put("/api/v1/mailbox/mailThreads/701")
       .query(true)
       .reply(200, fixture);
 
@@ -212,7 +212,7 @@ describe("pipedrive_mail_threads_update", () => {
     const fixture = fixturesV1("mail-threads-update.json");
 
     const scope = nock(BASE_URL)
-      .put("/v1/mailbox/mailThreads/701", (body: Record<string, unknown>) => {
+      .put("/api/v1/mailbox/mailThreads/701", (body: Record<string, unknown>) => {
         return body.read_flag === 0 && body.archived_flag === 1;
       })
       .query(true)
@@ -248,7 +248,7 @@ describe("pipedrive_mail_threads_delete", () => {
     const fixture = fixturesV1("mail-threads-delete.json");
 
     nock(BASE_URL)
-      .delete("/v1/mailbox/mailThreads/701")
+      .delete("/api/v1/mailbox/mailThreads/701")
       .query(true)
       .reply(200, fixture);
 
@@ -279,7 +279,7 @@ describe("pipedrive_deal_mail_messages_list", () => {
     const fixture = fixturesV1("deal-mail-messages-list.json");
 
     nock(BASE_URL)
-      .get("/v1/deals/117/mailMessages")
+      .get("/api/v1/deals/117/mailMessages")
       .query(true)
       .reply(200, fixture);
 
@@ -303,7 +303,7 @@ describe("pipedrive_person_mail_messages_list", () => {
     const fixture = fixturesV1("person-mail-messages-list.json");
 
     nock(BASE_URL)
-      .get("/v1/persons/201/mailMessages")
+      .get("/api/v1/persons/201/mailMessages")
       .query(true)
       .reply(200, fixture);
 
@@ -327,7 +327,7 @@ describe("pipedrive_organization_mail_messages_list", () => {
     const fixture = fixturesV1("organization-mail-messages-list.json");
 
     nock(BASE_URL)
-      .get("/v1/organizations/301/mailMessages")
+      .get("/api/v1/organizations/301/mailMessages")
       .query(true)
       .reply(200, fixture);
 

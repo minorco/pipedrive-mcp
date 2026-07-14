@@ -271,6 +271,130 @@ export function compactMailMessage(raw: Record<string, unknown>): CompactMailMes
   };
 }
 
+export interface CompactProject {
+  id: number;
+  title: string;
+  status: string | null;
+  board_id: number | null;
+  phase_id: number | null;
+  owner_id: number | null;
+  start_date: string | null;
+  end_date: string | null;
+  deal_ids: number[];
+  person_ids: number[];
+  org_ids: number[];
+  label_ids: number[];
+  archive_time: string | null;
+  update_time: string | null;
+  custom_fields_resolved?: Array<{ key: string; label: string; value: unknown; display_value: string }>;
+}
+
+export interface CompactProjectTask {
+  id: number;
+  title: string;
+  project_id: number | null;
+  parent_task_id: number | null;
+  assignee_ids: number[];
+  is_done: boolean;
+  is_milestone: boolean;
+  due_date: string | null;
+  marked_as_done_time: string | null;
+  update_time: string | null;
+}
+
+export interface CompactBoard {
+  id: number;
+  name: string;
+  order_nr: number | null;
+  update_time: string | null;
+}
+
+export interface CompactPhase {
+  id: number;
+  name: string;
+  board_id: number | null;
+  order_nr: number | null;
+  update_time: string | null;
+}
+
+export interface CompactProjectTemplate {
+  id: number;
+  title: string;
+  description: string | null;
+  owner_id: number | null;
+  update_time: string | null;
+}
+
+function extractIdArray(value: unknown): number[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((v) => (typeof v === "number" ? v : parseInt(String(v), 10)))
+    .filter((n) => !Number.isNaN(n));
+}
+
+export function compactProject(raw: Record<string, unknown>): CompactProject {
+  return {
+    id: raw.id as number,
+    title: (raw.title as string) ?? "",
+    status: (raw.status as string) ?? null,
+    board_id: (raw.board_id as number) ?? null,
+    phase_id: (raw.phase_id as number) ?? null,
+    owner_id: (raw.owner_id as number) ?? null,
+    start_date: (raw.start_date as string) ?? null,
+    end_date: (raw.end_date as string) ?? null,
+    deal_ids: extractIdArray(raw.deal_ids),
+    person_ids: extractIdArray(raw.person_ids),
+    org_ids: extractIdArray(raw.org_ids),
+    label_ids: extractIdArray(raw.label_ids),
+    archive_time: (raw.archive_time as string) ?? null,
+    update_time: (raw.update_time as string) ?? null,
+  };
+}
+
+export function compactProjectTask(raw: Record<string, unknown>): CompactProjectTask {
+  return {
+    id: raw.id as number,
+    title: (raw.title as string) ?? "",
+    project_id: (raw.project_id as number) ?? null,
+    parent_task_id: (raw.parent_task_id as number) ?? null,
+    assignee_ids: extractIdArray(raw.assignee_ids),
+    is_done: Boolean(raw.is_done),
+    is_milestone: Boolean(raw.is_milestone),
+    due_date: (raw.due_date as string) ?? null,
+    marked_as_done_time: (raw.marked_as_done_time as string) ?? null,
+    update_time: (raw.update_time as string) ?? null,
+  };
+}
+
+export function compactBoard(raw: Record<string, unknown>): CompactBoard {
+  return {
+    id: raw.id as number,
+    name: (raw.name as string) ?? "",
+    order_nr: (raw.order_nr as number) ?? null,
+    update_time: (raw.update_time as string) ?? null,
+  };
+}
+
+export function compactPhase(raw: Record<string, unknown>): CompactPhase {
+  return {
+    id: raw.id as number,
+    name: (raw.name as string) ?? "",
+    board_id: (raw.board_id as number) ?? null,
+    order_nr: (raw.order_nr as number) ?? null,
+    update_time: (raw.update_time as string) ?? null,
+  };
+}
+
+export function compactProjectTemplate(raw: Record<string, unknown>): CompactProjectTemplate {
+  return {
+    id: raw.id as number,
+    title: (raw.title as string) ?? "",
+    description: (raw.description as string) ?? null,
+    owner_id: (raw.owner_id as number) ?? null,
+    update_time: (raw.update_time as string) ?? null,
+  };
+}
+
 export function compactNote(raw: Record<string, unknown>): CompactNote {
   return {
     id: raw.id as number,

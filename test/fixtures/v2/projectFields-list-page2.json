@@ -1,0 +1,21 @@
+{
+  "success": true,
+  "data": [
+    {
+      "field_name": "Delivery Tags",
+      "field_code": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa03",
+      "field_type": "set",
+      "options": [
+        { "id": 20, "label": "Rush" },
+        { "id": 21, "label": "Fixed Price" }
+      ],
+      "subfields": null,
+      "is_custom_field": true,
+      "is_optional_response_field": false,
+      "is_writable": true
+    }
+  ],
+  "additional_data": {
+    "next_cursor": null
+  }
+}

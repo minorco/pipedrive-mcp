@@ -1,0 +1,24 @@
+{
+  "success": true,
+  "data": [
+    {
+      "id": 9,
+      "title": "Legacy CRM Cleanup",
+      "status": "completed",
+      "board_id": 1,
+      "phase_id": 4,
+      "owner_id": 22,
+      "start_date": "2026-01-05",
+      "end_date": "2026-03-31",
+      "deal_ids": [],
+      "person_ids": [],
+      "org_ids": [],
+      "label_ids": [],
+      "archive_time": "2026-04-02T20:00:00Z",
+      "update_time": "2026-04-02T20:00:00Z"
+    }
+  ],
+  "additional_data": {
+    "next_cursor": null
+  }
+}

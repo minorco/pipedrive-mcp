@@ -20,7 +20,7 @@ describe("pipedrive_note_comments_list", () => {
     const fixture = fixturesV1("note-comments-list.json");
 
     nock(BASE_URL)
-      .get("/v1/notes/501/comments")
+      .get("/api/v1/notes/501/comments")
       .query(true)
       .reply(200, fixture);
 
@@ -52,7 +52,7 @@ describe("pipedrive_note_comments_get", () => {
     const fixture = fixturesV1("note-comments-get.json");
 
     nock(BASE_URL)
-      .get("/v1/notes/501/comments/499fd290-c436-48e7-b8ba-223ec80434a5")
+      .get("/api/v1/notes/501/comments/499fd290-c436-48e7-b8ba-223ec80434a5")
       .query(true)
       .reply(200, fixture);
 
@@ -83,7 +83,7 @@ describe("pipedrive_note_comments_create", () => {
     const fixture = fixturesV1("note-comments-create.json");
 
     nock(BASE_URL)
-      .post("/v1/notes/501/comments")
+      .post("/api/v1/notes/501/comments")
       .query(true)
       .reply(200, fixture);
 
@@ -115,7 +115,7 @@ describe("pipedrive_note_comments_update", () => {
     const fixture = fixturesV1("note-comments-update.json");
 
     nock(BASE_URL)
-      .put("/v1/notes/501/comments/499fd290-c436-48e7-b8ba-223ec80434a5")
+      .put("/api/v1/notes/501/comments/499fd290-c436-48e7-b8ba-223ec80434a5")
       .query(true)
       .reply(200, fixture);
 
@@ -153,7 +153,7 @@ describe("pipedrive_note_comments_delete", () => {
     const fixture = fixturesV1("note-comments-delete.json");
 
     nock(BASE_URL)
-      .delete("/v1/notes/501/comments/499fd290-c436-48e7-b8ba-223ec80434a5")
+      .delete("/api/v1/notes/501/comments/499fd290-c436-48e7-b8ba-223ec80434a5")
       .query(true)
       .reply(200, fixture);
 

@@ -20,7 +20,7 @@ describe("pipedrive_notes_list", () => {
     const fixture = fixturesV1("notes-list.json");
 
     nock(BASE_URL)
-      .get("/v1/notes")
+      .get("/api/v1/notes")
       .query(true)
       .reply(200, fixture);
 
@@ -45,7 +45,7 @@ describe("pipedrive_notes_get", () => {
     const fixture = fixturesV1("notes-get.json");
 
     nock(BASE_URL)
-      .get("/v1/notes/501")
+      .get("/api/v1/notes/501")
       .query(true)
       .reply(200, fixture);
 
@@ -68,7 +68,7 @@ describe("pipedrive_notes_create", () => {
     const fixture = fixturesV1("notes-create.json");
 
     nock(BASE_URL)
-      .post("/v1/notes")
+      .post("/api/v1/notes")
       .query(true)
       .reply(200, fixture);
 
@@ -111,7 +111,7 @@ describe("pipedrive_notes_delete", () => {
     const fixture = fixturesV1("notes-delete.json");
 
     nock(BASE_URL)
-      .delete("/v1/notes/501")
+      .delete("/api/v1/notes/501")
       .query(true)
       .reply(200, fixture);
 

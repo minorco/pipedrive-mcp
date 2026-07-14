@@ -51,7 +51,7 @@ describe("pipedrive_organizations_get", () => {
       .reply(200, fixture);
 
     nock(BASE_URL)
-      .get("/v1/organizationFields")
+      .get("/api/v1/organizationFields")
       .query(true)
       .reply(200, { success: true, data: [] });
 
@@ -137,7 +137,7 @@ describe("pipedrive_organizations_update", () => {
     const updateFixture = fixturesV2("organizations-update.json");
 
     nock(BASE_URL)
-      .get("/v1/organizationFields")
+      .get("/api/v1/organizationFields")
       .query(true)
       .reply(200, orgFieldsFixture);
 
@@ -166,7 +166,7 @@ describe("pipedrive_organizations_update", () => {
     const updateFixture = fixturesV2("organizations-update.json");
 
     nock(BASE_URL)
-      .get("/v1/organizationFields")
+      .get("/api/v1/organizationFields")
       .query(true)
       .reply(200, orgFieldsFixture);
 
@@ -191,7 +191,7 @@ describe("pipedrive_organizations_update", () => {
     const orgFieldsFixture = fixturesV1("organizationFields-list.json");
 
     nock(BASE_URL)
-      .get("/v1/organizationFields")
+      .get("/api/v1/organizationFields")
       .query(true)
       .reply(200, orgFieldsFixture);
 

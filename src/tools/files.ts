@@ -84,7 +84,7 @@ async function handleFilesUpload(args: Record<string, unknown>): Promise<ToolRes
   }
 
   const { config } = getContext();
-  const baseUrl = `https://${config.companyDomain}.pipedrive.com/v1`;
+  const baseUrl = `https://${config.companyDomain}.pipedrive.com/api/v1`;
 
   // Build multipart form data
   const boundary = `----PipedriveMCP${Date.now()}`;

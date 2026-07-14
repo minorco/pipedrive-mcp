@@ -65,7 +65,10 @@ export function loadConfig(): Config {
 }
 
 export function getBaseUrlV1(config: Config): string {
-  return `https://${config.companyDomain}.pipedrive.com/v1`;
+  // /api/v1 is the documented canonical prefix. The bare /v1 alias serves most
+  // endpoints but NOT the Projects legacy sub-resources (/projects/:id/plan,
+  // /groups, /activities), which 404 with "Unknown method" outside /api/v1.
+  return `https://${config.companyDomain}.pipedrive.com/api/v1`;
 }
 
 export function getBaseUrlV2(config: Config): string {

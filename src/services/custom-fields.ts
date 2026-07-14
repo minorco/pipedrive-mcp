@@ -3,7 +3,7 @@ import { getContext } from "../server.js";
 import { withRetry } from "../pipedrive/retries.js";
 import { log } from "../logging.js";
 
-export type FieldEntityType = "deal" | "person" | "organization" | "product" | "activity";
+export type FieldEntityType = "deal" | "person" | "organization" | "product" | "activity" | "project";
 
 export interface FieldOption {
   id: number;
@@ -37,14 +37,21 @@ const ENTITY_TO_ENDPOINT: Record<FieldEntityType, { version: "v1" | "v2"; path: 
   organization: { version: "v1", path: "/organizationFields" },
   product: { version: "v1", path: "/productFields" },
   activity: { version: "v1", path: "/activityFields" },
+  // projectFields has no v1 equivalent; it is cursor-paginated unlike the v1 field endpoints
+  project: { version: "v2", path: "/projectFields" },
 };
+
+// Safety cap on the v2 field-list cursor loop; 10 pages x 500 = 5000 fields,
+// far beyond any real account's field count
+const MAX_FIELD_PAGES = 10;
 
 function parseFieldMetadata(
   raw: Record<string, unknown>,
   entityType: FieldEntityType,
 ): FieldMetadata {
-  const key = raw.key as string;
-  const name = raw.name as string;
+  // v1 field endpoints use key/name; v2 projectFields uses field_code/field_name
+  const key = (raw.key ?? raw.field_code) as string;
+  const name = (raw.name ?? raw.field_name) as string;
   const fieldType = raw.field_type as string;
   const rawOptions = raw.options as Array<{ id: number; label: string }> | undefined;
 
@@ -84,25 +91,51 @@ export async function getFieldsForEntity(
     if (cached) return cached;
   }
 
-  const { apiV1, rateLimiters } = getContext();
+  const { apiV1, apiV2, rateLimiters } = getContext();
   const endpoint = ENTITY_TO_ENDPOINT[entityType];
   const allFields: FieldMetadata[] = [];
 
-  // All field endpoints use v1 - returns all fields in one call, no pagination
-  const response = await rateLimiters.general.schedule(() =>
-    withRetry(() => apiV1.list<Record<string, unknown>>(endpoint.path), {
-      label: `GET ${endpoint.path}`,
-    }),
-  );
+  if (endpoint.version === "v1") {
+    // v1 field endpoints return all fields in one call, no pagination
+    const response = await rateLimiters.general.schedule(() =>
+      withRetry(() => apiV1.list<Record<string, unknown>>(endpoint.path), {
+        label: `GET ${endpoint.path}`,
+      }),
+    );
 
-  if (response.status !== 200) {
-    const errMsg = response.data.error ?? `HTTP ${response.status}`;
-    throw new Error(`Failed to fetch ${entityType} fields from ${endpoint.path}: ${errMsg}`);
-  }
+    if (response.status !== 200) {
+      const errMsg = response.data.error ?? `HTTP ${response.status}`;
+      throw new Error(`Failed to fetch ${entityType} fields from ${endpoint.path}: ${errMsg}`);
+    }
 
-  const items = response.data.data ?? [];
-  for (const item of items) {
-    allFields.push(parseFieldMetadata(item, entityType));
+    const items = response.data.data ?? [];
+    for (const item of items) {
+      allFields.push(parseFieldMetadata(item, entityType));
+    }
+  } else {
+    // v2 field endpoints (projectFields) are cursor-paginated
+    let cursor: string | undefined;
+    for (let page = 0; page < MAX_FIELD_PAGES; page++) {
+      const params: Record<string, string | number | undefined> = { limit: 500, cursor };
+      const response = await rateLimiters.general.schedule(() =>
+        withRetry(() => apiV2.list<Record<string, unknown>>(endpoint.path, params), {
+          label: `GET ${endpoint.path}`,
+        }),
+      );
+
+      if (response.status !== 200) {
+        const errMsg = response.data.error ?? `HTTP ${response.status}`;
+        throw new Error(`Failed to fetch ${entityType} fields from ${endpoint.path}: ${errMsg}`);
+      }
+
+      const items = response.data.data ?? [];
+      for (const item of items) {
+        allFields.push(parseFieldMetadata(item, entityType));
+      }
+
+      cursor = response.data.additional_data?.next_cursor ?? undefined;
+      if (!cursor) break;
+    }
   }
 
   cache.set(entityType, allFields);
@@ -301,7 +334,7 @@ export async function resolveCustomFieldsInResponse(
   data: Record<string, unknown>,
 ): Promise<Array<{ key: string; label: string; value: unknown; display_value: string }>> {
   const fields = await getFieldsForEntity(entityType);
-  const customFieldKeys = new Set(fields.filter((f) => f.key.length === 40).map((f) => f.key));
+  const customFieldKeys = new Set(fields.filter((f) => f.key?.length === 40).map((f) => f.key));
   const result: Array<{ key: string; label: string; value: unknown; display_value: string }> = [];
 
   // v2 API nests custom fields in a `custom_fields` object; v1 puts them at top level

@@ -1,0 +1,10 @@
+{
+  "success": true,
+  "data": [
+    { "id": 1, "name": "Kickoff", "board_id": 1, "order_nr": 1, "update_time": "2026-05-01T00:00:00Z" },
+    { "id": 2, "name": "In Progress", "board_id": 1, "order_nr": 2, "update_time": "2026-05-01T00:00:00Z" },
+    { "id": 3, "name": "Review", "board_id": 1, "order_nr": 3, "update_time": "2026-05-01T00:00:00Z" },
+    { "id": 4, "name": "Done", "board_id": 1, "order_nr": 4, "update_time": "2026-05-01T00:00:00Z" }
+  ],
+  "additional_data": null
+}

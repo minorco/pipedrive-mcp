@@ -1,0 +1,16 @@
+{
+  "success": true,
+  "data": [
+    {
+      "id": 51,
+      "title": "Standard Automation Build",
+      "description": "Discovery, build, UAT, handover",
+      "owner_id": 22,
+      "add_time": "2026-04-10T00:00:00Z",
+      "update_time": "2026-06-15T00:00:00Z"
+    }
+  ],
+  "additional_data": {
+    "next_cursor": null
+  }
+}
