@@ -30,11 +30,11 @@ export const ProjectTasksGetSchema = z.object({
 
 const taskWriteFields = {
   description: z.string().optional().describe("Task description"),
-  done: z.boolean().optional().describe("Completion status"),
-  milestone: z.boolean().optional().describe("Whether the task is a milestone"),
+  is_done: z.boolean().optional().describe("Completion status"),
+  is_milestone: z.boolean().optional().describe("Whether the task is a milestone. Milestones require a due_date."),
   due_date: z.string().optional().describe("Due date (YYYY-MM-DD)"),
   start_date: z.string().optional().describe("Start date (YYYY-MM-DD)"),
-  assignee_id: z.coerce.number().int().positive().optional().describe("Assignee user ID"),
+  assignee_ids: z.array(z.coerce.number().int().positive()).optional().describe("Assignee user IDs"),
   priority: z.coerce.number().int().optional().describe("Task priority"),
 };
 

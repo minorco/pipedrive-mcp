@@ -49,8 +49,9 @@ function parseFieldMetadata(
   raw: Record<string, unknown>,
   entityType: FieldEntityType,
 ): FieldMetadata {
-  const key = raw.key as string;
-  const name = raw.name as string;
+  // v1 field endpoints use key/name; v2 projectFields uses field_code/field_name
+  const key = (raw.key ?? raw.field_code) as string;
+  const name = (raw.name ?? raw.field_name) as string;
   const fieldType = raw.field_type as string;
   const rawOptions = raw.options as Array<{ id: number; label: string }> | undefined;
 
@@ -333,7 +334,7 @@ export async function resolveCustomFieldsInResponse(
   data: Record<string, unknown>,
 ): Promise<Array<{ key: string; label: string; value: unknown; display_value: string }>> {
   const fields = await getFieldsForEntity(entityType);
-  const customFieldKeys = new Set(fields.filter((f) => f.key.length === 40).map((f) => f.key));
+  const customFieldKeys = new Set(fields.filter((f) => f.key?.length === 40).map((f) => f.key));
   const result: Array<{ key: string; label: string; value: unknown; display_value: string }> = [];
 
   // v2 API nests custom fields in a `custom_fields` object; v1 puts them at top level

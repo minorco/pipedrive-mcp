@@ -55,7 +55,7 @@ describe("pipedrive_deals_get", () => {
       .reply(200, fixture);
 
     nock(BASE_URL)
-      .get("/v1/dealFields")
+      .get("/api/v1/dealFields")
       .query(true)
       .reply(200, dealFieldsFixture);
 

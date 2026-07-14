@@ -52,7 +52,7 @@ describe("pipedrive_persons_get", () => {
       .reply(200, fixture);
 
     nock(BASE_URL)
-      .get("/v1/personFields")
+      .get("/api/v1/personFields")
       .query(true)
       .reply(200, personFieldsFixture);
 

@@ -2,19 +2,27 @@
   "success": true,
   "data": [
     {
-      "key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01",
-      "name": "Region",
+      "field_name": "Region",
+      "field_code": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01",
       "field_type": "enum",
       "options": [
         { "id": 10, "label": "North Island" },
         { "id": 11, "label": "South Island" }
-      ]
+      ],
+      "subfields": null,
+      "is_custom_field": true,
+      "is_optional_response_field": false,
+      "is_writable": true
     },
     {
-      "key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02",
-      "name": "Budget Code",
+      "field_name": "Budget Code",
+      "field_code": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02",
       "field_type": "varchar",
-      "options": null
+      "options": null,
+      "subfields": null,
+      "is_custom_field": true,
+      "is_optional_response_field": false,
+      "is_writable": true
     }
   ],
   "additional_data": {

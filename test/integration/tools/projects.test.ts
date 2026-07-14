@@ -217,7 +217,7 @@ describe("pipedrive_projects_permitted_users", () => {
 
 describe("v1 project sub-resources", () => {
   it("lists project activities via v1", async () => {
-    const scope = nock(BASE_URL).get("/v1/projects/1/activities").query(true).reply(200, fixturesV1("project-activities-list.json"));
+    const scope = nock(BASE_URL).get("/api/v1/projects/1/activities").query(true).reply(200, fixturesV1("project-activities-list.json"));
 
     const { result, data } = await callTool("pipedrive_project_activities_list", { project_id: 1 });
     expect(result.isError).toBeFalsy();
@@ -227,7 +227,7 @@ describe("v1 project sub-resources", () => {
   });
 
   it("lists project groups via v1", async () => {
-    nock(BASE_URL).get("/v1/projects/1/groups").query(true).reply(200, fixturesV1("project-groups-list.json"));
+    nock(BASE_URL).get("/api/v1/projects/1/groups").query(true).reply(200, fixturesV1("project-groups-list.json"));
 
     const { result, data } = await callTool("pipedrive_project_groups_list", { project_id: 1 });
     expect(result.isError).toBeFalsy();
@@ -236,7 +236,7 @@ describe("v1 project sub-resources", () => {
   });
 
   it("gets the project plan via v1", async () => {
-    nock(BASE_URL).get("/v1/projects/1/plan").query(true).reply(200, fixturesV1("project-plan.json"));
+    nock(BASE_URL).get("/api/v1/projects/1/plan").query(true).reply(200, fixturesV1("project-plan.json"));
 
     const { result, data } = await callTool("pipedrive_project_plan_get", { project_id: 1 });
     expect(result.isError).toBeFalsy();
@@ -248,7 +248,7 @@ describe("v1 project sub-resources", () => {
 describe("pipedrive_project_plan_update", () => {
   it("PUTs to the plan tasks path for item_type task", async () => {
     const scope = nock(BASE_URL)
-      .put("/v1/projects/1/plan/tasks/401", (body) => (body as Record<string, unknown>).phase_id === 3)
+      .put("/api/v1/projects/1/plan/tasks/401", (body) => (body as Record<string, unknown>).phase_id === 3)
       .query(true)
       .reply(200, fixturesV1("project-plan-update.json"));
 
@@ -264,7 +264,7 @@ describe("pipedrive_project_plan_update", () => {
 
   it("PUTs to the plan activities path for item_type activity", async () => {
     const scope = nock(BASE_URL)
-      .put("/v1/projects/1/plan/activities/900", (body) => (body as Record<string, unknown>).group_id === 12)
+      .put("/api/v1/projects/1/plan/activities/900", (body) => (body as Record<string, unknown>).group_id === 12)
       .query(true)
       .reply(200, { success: true, data: { item_id: 900, item_type: "activity", group_id: 12 } });
 

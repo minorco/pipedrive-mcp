@@ -180,7 +180,7 @@ describe("pipedrive_product_deals_list", () => {
     const fixture = fixturesV1("product-deals-list.json");
 
     nock(BASE_URL)
-      .get("/v1/products/29/deals")
+      .get("/api/v1/products/29/deals")
       .query((q) => q.status === "won")
       .reply(200, fixture);
 

@@ -294,9 +294,9 @@ export interface CompactProjectTask {
   title: string;
   project_id: number | null;
   parent_task_id: number | null;
-  assignee_id: number | null;
-  done: boolean;
-  milestone: boolean;
+  assignee_ids: number[];
+  is_done: boolean;
+  is_milestone: boolean;
   due_date: string | null;
   marked_as_done_time: string | null;
   update_time: string | null;
@@ -357,10 +357,9 @@ export function compactProjectTask(raw: Record<string, unknown>): CompactProject
     title: (raw.title as string) ?? "",
     project_id: (raw.project_id as number) ?? null,
     parent_task_id: (raw.parent_task_id as number) ?? null,
-    assignee_id: (raw.assignee_id as number) ?? null,
-    // v2 tasks encode done/milestone as 0/1
-    done: Boolean(raw.done),
-    milestone: Boolean(raw.milestone),
+    assignee_ids: extractIdArray(raw.assignee_ids),
+    is_done: Boolean(raw.is_done),
+    is_milestone: Boolean(raw.is_milestone),
     due_date: (raw.due_date as string) ?? null,
     marked_as_done_time: (raw.marked_as_done_time as string) ?? null,
     update_time: (raw.update_time as string) ?? null,
