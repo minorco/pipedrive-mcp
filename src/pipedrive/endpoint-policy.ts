@@ -118,6 +118,51 @@ const policies: Record<string, EndpointPolicy> = {
   "webhooks.create": { version: "v1", method: "POST", path: "/webhooks", pagination: "none" },
   "webhooks.delete": { version: "v1", method: "DELETE", path: "/webhooks/:id", pagination: "none" },
 
+  // Projects (v2, BETA API — requires the paid Projects add-on)
+  "projects.list": { version: "v2", method: "GET", path: "/projects", pagination: "cursor" },
+  "projects.listArchived": { version: "v2", method: "GET", path: "/projects/archived", pagination: "cursor" },
+  "projects.get": { version: "v2", method: "GET", path: "/projects/:id", pagination: "none" },
+  "projects.search": { version: "v2", method: "GET", path: "/projects/search", pagination: "cursor", isSearch: true },
+  "projects.create": { version: "v2", method: "POST", path: "/projects", pagination: "none" },
+  "projects.update": { version: "v2", method: "PATCH", path: "/projects/:id", pagination: "none" },
+  "projects.delete": { version: "v2", method: "DELETE", path: "/projects/:id", pagination: "none" },
+  "projects.archive": { version: "v2", method: "POST", path: "/projects/:id/archive", pagination: "none" },
+  "projects.changelog": { version: "v2", method: "GET", path: "/projects/:id/changelog", pagination: "cursor" },
+  "projects.permittedUsers": { version: "v2", method: "GET", path: "/projects/:id/permittedUsers", pagination: "none" },
+  // Projects legacy sub-resources (v1 only, no documented pagination)
+  "projectActivities.list": { version: "v1", method: "GET", path: "/projects/:id/activities", pagination: "none" },
+  "projectGroups.list": { version: "v1", method: "GET", path: "/projects/:id/groups", pagination: "none" },
+  "projectPlan.get": { version: "v1", method: "GET", path: "/projects/:id/plan", pagination: "none" },
+  "projectPlan.updateActivity": { version: "v1", method: "PUT", path: "/projects/:id/plan/activities/:activityId", pagination: "none" },
+  "projectPlan.updateTask": { version: "v1", method: "PUT", path: "/projects/:id/plan/tasks/:taskId", pagination: "none" },
+
+  // Project tasks (v2, BETA API — Projects add-on tasks, not the "task" activity type)
+  "projectTasks.list": { version: "v2", method: "GET", path: "/tasks", pagination: "cursor" },
+  "projectTasks.get": { version: "v2", method: "GET", path: "/tasks/:id", pagination: "none" },
+  "projectTasks.create": { version: "v2", method: "POST", path: "/tasks", pagination: "none" },
+  "projectTasks.update": { version: "v2", method: "PATCH", path: "/tasks/:id", pagination: "none" },
+  "projectTasks.delete": { version: "v2", method: "DELETE", path: "/tasks/:id", pagination: "none" },
+
+  // Project boards & phases (v2, BETA API; board:pipeline :: phase:stage)
+  "projectBoards.list": { version: "v2", method: "GET", path: "/boards", pagination: "none" },
+  "projectBoards.get": { version: "v2", method: "GET", path: "/boards/:id", pagination: "none" },
+  "projectBoards.create": { version: "v2", method: "POST", path: "/boards", pagination: "none" },
+  "projectBoards.update": { version: "v2", method: "PATCH", path: "/boards/:id", pagination: "none" },
+  "projectBoards.delete": { version: "v2", method: "DELETE", path: "/boards/:id", pagination: "none" },
+  "projectPhases.list": { version: "v2", method: "GET", path: "/phases", pagination: "none" },
+  "projectPhases.get": { version: "v2", method: "GET", path: "/phases/:id", pagination: "none" },
+  "projectPhases.create": { version: "v2", method: "POST", path: "/phases", pagination: "none" },
+  "projectPhases.update": { version: "v2", method: "PATCH", path: "/phases/:id", pagination: "none" },
+  "projectPhases.delete": { version: "v2", method: "DELETE", path: "/phases/:id", pagination: "none" },
+
+  // Project templates (v2, BETA API; read-only surface)
+  "projectTemplates.list": { version: "v2", method: "GET", path: "/projectTemplates", pagination: "cursor" },
+  "projectTemplates.get": { version: "v2", method: "GET", path: "/projectTemplates/:id", pagination: "none" },
+
+  // Project fields (v2 — the one field-metadata endpoint with no v1 equivalent;
+  // cursor-paginated unlike the v1 field endpoints above)
+  "projectFields.list": { version: "v2", method: "GET", path: "/projectFields", pagination: "cursor" },
+
   // Mail (v1)
   "mailThreads.list": { version: "v1", method: "GET", path: "/mailbox/mailThreads", pagination: "offset" },
   "mailThreads.get": { version: "v1", method: "GET", path: "/mailbox/mailThreads/:id", pagination: "none" },

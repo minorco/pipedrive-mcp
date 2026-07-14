@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "data": [
+    {
+      "key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa03",
+      "name": "Delivery Tags",
+      "field_type": "set",
+      "options": [
+        { "id": 20, "label": "Rush" },
+        { "id": 21, "label": "Fixed Price" }
+      ]
+    }
+  ],
+  "additional_data": {
+    "next_cursor": null
+  }
+}

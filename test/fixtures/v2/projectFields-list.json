@@ -1,0 +1,23 @@
+{
+  "success": true,
+  "data": [
+    {
+      "key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01",
+      "name": "Region",
+      "field_type": "enum",
+      "options": [
+        { "id": 10, "label": "North Island" },
+        { "id": 11, "label": "South Island" }
+      ]
+    },
+    {
+      "key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02",
+      "name": "Budget Code",
+      "field_type": "varchar",
+      "options": null
+    }
+  ],
+  "additional_data": {
+    "next_cursor": "cursor-page-2"
+  }
+}
