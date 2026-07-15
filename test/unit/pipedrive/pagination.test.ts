@@ -5,6 +5,7 @@ import {
   buildPaginationParams,
   extractNextPageToken,
   buildPaginatedResult,
+  PageTokenError,
 } from "../../../src/pipedrive/pagination.js";
 
 describe("encodePageToken", () => {
@@ -43,6 +44,18 @@ describe("decodePageToken", () => {
   it("throws on invalid mode", () => {
     expect(() => decodePageToken("badmode:123")).toThrow("Invalid page token mode");
   });
+
+  it("throws PageTokenError on invalid format so the handler wrapper reports a validation error", () => {
+    expect(() => decodePageToken("100")).toThrow(PageTokenError);
+  });
+
+  it("throws PageTokenError on invalid mode", () => {
+    expect(() => decodePageToken("badmode:123")).toThrow(PageTokenError);
+  });
+
+  it("includes guidance to use next_page_token in the invalid-format message", () => {
+    expect(() => decodePageToken("100")).toThrow("next_page_token");
+  });
 });
 
 describe("buildPaginationParams", () => {
@@ -76,6 +89,14 @@ describe("buildPaginationParams", () => {
     expect(() => buildPaginationParams("offset", 25, "offset:notanumber")).toThrow(
       "Invalid offset page token value",
     );
+  });
+
+  it("throws PageTokenError on mode mismatch", () => {
+    expect(() => buildPaginationParams("cursor", 25, "offset:50")).toThrow(PageTokenError);
+  });
+
+  it("throws PageTokenError on NaN offset value", () => {
+    expect(() => buildPaginationParams("offset", 25, "offset:notanumber")).toThrow(PageTokenError);
   });
 });
 

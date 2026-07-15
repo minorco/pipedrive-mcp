@@ -20,10 +20,11 @@ import {
   ConfirmDeleteSchema,
   DryRunSchema,
   ReasonSchema,
+  idsFilterSchema,
 } from "./common.js";
 
 export const DealsListSchema = z.object({
-  ids: z.array(z.coerce.number().int().positive()).optional().describe("Filter by deal IDs"),
+  ids: idsFilterSchema("deal"),
   owner_id: OwnerIdSchema,
   person_id: z.coerce.number().int().positive().optional().describe("Filter by linked person ID"),
   org_id: z.coerce.number().int().positive().optional().describe("Filter by linked organization ID"),

@@ -16,10 +16,11 @@ import {
   ConfirmDeleteSchema,
   DryRunSchema,
   ReasonSchema,
+  idsFilterSchema,
 } from "./common.js";
 
 export const ProductsListSchema = z.object({
-  ids: z.array(z.coerce.number().int().positive()).optional().describe("Filter by product IDs"),
+  ids: idsFilterSchema("product"),
   owner_id: OwnerIdSchema,
   filter_id: FilterIdSchema,
   cursor: PageTokenSchema,

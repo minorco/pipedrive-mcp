@@ -7,6 +7,7 @@ import { type ToolResult } from "./tool-result.js";
 import { validationErrorResult } from "./errors.js";
 import { errorResult } from "./tool-result.js";
 import { HttpClientError } from "../pipedrive/http-client.js";
+import { PageTokenError } from "../pipedrive/pagination.js";
 import { log } from "../logging.js";
 import { captureError } from "../sentry.js";
 
@@ -78,6 +79,19 @@ export function setupToolHandlers(server: Server): void {
       return result;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+
+      // Bad page tokens are caller mistakes, not internal failures
+      if (err instanceof PageTokenError) {
+        log.warn(`Tool ${name} received an invalid page token`, { error: message });
+        captureError(err, {
+          tool: name,
+          category: "validation",
+          level: "warning",
+          extra: { args_keys: Object.keys(args ?? {}) },
+        });
+        return validationErrorResult(name, message);
+      }
+
       log.error(`Tool ${name} threw unexpectedly`, { error: message });
 
       captureError(err, {
