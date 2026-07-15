@@ -48,8 +48,22 @@ export const SearchLimitSchema = z.coerce
 
 export const PageTokenSchema = z
   .string()
+  .regex(
+    /^(cursor|offset):.+$/,
+    "Page tokens are opaque; pass the next_page_token value exactly as returned by the previous call. Do not construct one manually or pass a page number.",
+  )
   .optional()
-  .describe("Opaque token from previous response to fetch the next page");
+  .describe(
+    "Opaque token from the previous response's next_page_token to fetch the next page. Do not construct manually.",
+  );
+
+// Pipedrive v2 list endpoints reject ids filters with more than 100 items.
+export const idsFilterSchema = (entity: string) =>
+  z
+    .array(z.coerce.number().int().positive())
+    .max(100, "Pipedrive limits the ids filter to 100 IDs per request; split larger sets into batches of 100.")
+    .optional()
+    .describe(`Filter by ${entity} IDs (max 100 per request; batch larger sets)`);
 
 export const SortDirectionSchema = z
   .enum(["asc", "desc"])

@@ -19,10 +19,11 @@ import {
   ConfirmMergeSchema,
   DryRunSchema,
   ReasonSchema,
+  idsFilterSchema,
 } from "./common.js";
 
 export const OrganizationsListSchema = z.object({
-  ids: z.array(z.coerce.number().int().positive()).optional().describe("Filter by organization IDs"),
+  ids: idsFilterSchema("organization"),
   owner_id: OwnerIdSchema,
   filter_id: FilterIdSchema,
   updated_since: UpdatedSinceSchema,

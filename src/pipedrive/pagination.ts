@@ -13,6 +13,15 @@ export interface PaginatedResult<T> {
   pagination_mode: PaginationMode;
 }
 
+// Thrown for malformed or mismatched page tokens; the tool-call wrapper maps
+// this to a validation error result instead of an internal error.
+export class PageTokenError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PageTokenError";
+  }
+}
+
 export function encodePageToken(mode: PaginationMode, value: string | number): string {
   if (mode === "cursor") {
     return `cursor:${value}`;
@@ -23,12 +32,15 @@ export function encodePageToken(mode: PaginationMode, value: string | number): s
 export function decodePageToken(token: string): PageToken {
   const colonIdx = token.indexOf(":");
   if (colonIdx === -1) {
-    throw new Error(`Invalid page token format: ${token}`);
+    throw new PageTokenError(
+      `Invalid page token format: ${token}. Page tokens are opaque; pass the next_page_token value ` +
+      `exactly as returned by the previous call. Do not construct one manually or pass a page number.`,
+    );
   }
   const mode = token.substring(0, colonIdx) as PaginationMode;
   const value = token.substring(colonIdx + 1);
   if (mode !== "cursor" && mode !== "offset") {
-    throw new Error(`Invalid page token mode: ${mode}`);
+    throw new PageTokenError(`Invalid page token mode: ${mode}`);
   }
   return { mode, value };
 }
@@ -43,7 +55,7 @@ export function buildPaginationParams(
   if (pageToken) {
     const decoded = decodePageToken(pageToken);
     if (decoded.mode !== paginationMode) {
-      throw new Error(
+      throw new PageTokenError(
         `Page token mode "${decoded.mode}" does not match endpoint pagination mode "${paginationMode}". ` +
         `This token may be from a different endpoint.`,
       );
@@ -53,7 +65,7 @@ export function buildPaginationParams(
     } else {
       const startVal = parseInt(decoded.value, 10);
       if (isNaN(startVal)) {
-        throw new Error(`Invalid offset page token value: "${decoded.value}"`);
+        throw new PageTokenError(`Invalid offset page token value: "${decoded.value}"`);
       }
       params.start = startVal;
     }
