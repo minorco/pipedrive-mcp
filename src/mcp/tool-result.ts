@@ -1,6 +1,21 @@
 import { type CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import { type ErrorCategory } from "../pipedrive/error-normalizer.js";
 
-export type ToolResult = CallToolResult;
+/**
+ * Structured error metadata carried alongside the human-readable error text.
+ *
+ * CallToolResult's base schema is a loose object, so this extra top-level
+ * field survives SDK validation. Downstream wrappers (e.g. the Cloudflare
+ * worker's token-refresh interceptor) key off `category` instead of
+ * string-matching the error text, which misclassified validation errors
+ * that merely mentioned "token" (see PIPEDRIVE-MCP-9).
+ */
+export interface ErrorMeta {
+  category: ErrorCategory;
+  status?: number;
+}
+
+export type ToolResult = CallToolResult & { errorMeta?: ErrorMeta };
 
 export function successResult(data: unknown): ToolResult {
   return {
@@ -13,7 +28,7 @@ export function successResult(data: unknown): ToolResult {
   };
 }
 
-export function errorResult(message: string): ToolResult {
+export function errorResult(message: string, errorMeta?: ErrorMeta): ToolResult {
   return {
     content: [
       {
@@ -22,6 +37,7 @@ export function errorResult(message: string): ToolResult {
       },
     ],
     isError: true,
+    ...(errorMeta ? { errorMeta } : {}),
   };
 }
 
