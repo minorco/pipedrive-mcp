@@ -13,13 +13,18 @@ export function apiErrorResult(err: NormalizedError): ToolResult {
       extra: { guidance: err.guidance, retryable: err.retryable },
     });
   }
-  return errorResult(formatErrorMessage(err));
+  return errorResult(formatErrorMessage(err), {
+    category: err.category,
+    status: err.status,
+  });
 }
 
 export function validationErrorResult(tool: string, message: string): ToolResult {
-  return errorResult(`${tool}: validation error. ${message}`);
+  return errorResult(`${tool}: validation error. ${message}`, {
+    category: "validation",
+  });
 }
 
 export function guardErrorResult(message: string): ToolResult {
-  return errorResult(message);
+  return errorResult(message, { category: "validation" });
 }
