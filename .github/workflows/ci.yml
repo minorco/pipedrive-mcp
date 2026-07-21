@@ -1,10 +1,12 @@
 name: CI
 
+# integration is where work lands and what deploys to staging (via
+# notify-cloudflare), so it gets the full gate; main only advances on promote.
 on:
   push:
-    branches: [main]
+    branches: [main, integration]
   pull_request:
-    branches: [main]
+    branches: [main, integration]
 
 jobs:
   build-and-test:
