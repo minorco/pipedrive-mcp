@@ -187,6 +187,7 @@ export interface CompactMailThread {
 
 export interface CompactMailMessage {
   id: number;
+  mail_thread_id: number | null;
   subject: string;
   from_name: string | null;
   from_email: string;
@@ -195,6 +196,11 @@ export interface CompactMailMessage {
   body: string | null;
   has_body_flag: boolean;
   has_attachments_flag: boolean;
+  // Present on mailbox endpoints; null when the source object omits them.
+  // Attachments themselves are files: list them with pipedrive_files_list
+  // (deal_id/person_id/org_id + mail_message_id).
+  has_real_attachments_flag: boolean | null;
+  has_inline_attachments_flag: boolean | null;
   draft_flag: boolean;
   read_flag: boolean;
   message_time: string | null;
@@ -256,6 +262,7 @@ export function compactMailMessage(raw: Record<string, unknown>): CompactMailMes
   const firstFrom = Array.isArray(fromList) && fromList.length > 0 ? fromList[0] : null;
   return {
     id: raw.id as number,
+    mail_thread_id: (raw.mail_thread_id as number) ?? null,
     subject: (raw.subject as string) ?? "",
     from_name: firstFrom ? ((firstFrom.name as string) ?? null) : null,
     from_email: firstFrom ? ((firstFrom.email_address as string) ?? "") : "",
@@ -264,6 +271,8 @@ export function compactMailMessage(raw: Record<string, unknown>): CompactMailMes
     body: (raw.body as string) ?? null,
     has_body_flag: Boolean(raw.has_body_flag),
     has_attachments_flag: Boolean(raw.has_attachments_flag),
+    has_real_attachments_flag: raw.has_real_attachments_flag === undefined ? null : Boolean(raw.has_real_attachments_flag),
+    has_inline_attachments_flag: raw.has_inline_attachments_flag === undefined ? null : Boolean(raw.has_inline_attachments_flag),
     draft_flag: Boolean(raw.draft_flag),
     read_flag: Boolean(raw.read_flag),
     message_time: (raw.message_time as string) ?? null,

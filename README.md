@@ -197,6 +197,8 @@ Read and manage synced email threads and messages from Pipedrive's mailbox. List
 ### Files (3 tools)
 `pipedrive_files_list` `pipedrive_files_get` `pipedrive_files_upload`
 
+`pipedrive_files_list` scopes through the per-entity files endpoints (exactly one of `deal_id`, `person_id`, `org_id`, `product_id`); `activity_id`, `lead_id` and `mail_message_id` filter within that scope. Files expose `mail_message_id`, so a scope plus `mail_message_id` lists the attachments of one email (inline images hidden unless `include_inline`).
+
 ### Users (3 tools)
 `pipedrive_users_list` `pipedrive_users_get` `pipedrive_users_permissions`
 

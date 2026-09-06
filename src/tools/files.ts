@@ -160,7 +160,7 @@ async function handleFilesUpload(args: Record<string, unknown>): Promise<ToolRes
 }
 
 const tools: ToolDefinition[] = [
-  { name: "pipedrive_files_list", description: "List files. Scope with exactly one of deal_id, person_id, org_id or product_id (account-wide recent files otherwise). activity_id and lead_id filter within a scope. Each file carries mail_message_id when it arrived as an email attachment.", inputSchema: zodToJsonSchema(FilesListSchema), handler: handleFilesList },
+  { name: "pipedrive_files_list", description: "List files. Scope with exactly one of deal_id, person_id, org_id or product_id (account-wide recent files otherwise). activity_id and lead_id filter within a scope. Each file carries mail_message_id when it arrived as an email attachment; pass a scope plus mail_message_id to list one message's attachments (inline images hidden unless include_inline).", inputSchema: zodToJsonSchema(FilesListSchema), handler: handleFilesList },
   { name: "pipedrive_files_get", description: "Get file metadata and optional download URL.", inputSchema: zodToJsonSchema(FilesGetSchema), handler: handleFilesGet },
   { name: "pipedrive_files_upload", description: "Upload a base64-encoded file and attach to an entity.", inputSchema: zodToJsonSchema(FilesUploadSchema), handler: handleFilesUpload },
 ];
