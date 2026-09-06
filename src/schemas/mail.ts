@@ -48,16 +48,19 @@ export const DealMailMessagesListSchema = z.object({
   deal_id: IdSchema.describe("The deal ID"),
   cursor: PageTokenSchema,
   limit: LimitSchema,
+  include_body: z.boolean().optional().default(false).describe("Include full message body in response"),
 }).strict();
 
 export const PersonMailMessagesListSchema = z.object({
   person_id: IdSchema.describe("The person ID"),
   cursor: PageTokenSchema,
   limit: LimitSchema,
+  include_body: z.boolean().optional().default(false).describe("Include full message body in response"),
 }).strict();
 
 export const OrganizationMailMessagesListSchema = z.object({
   org_id: IdSchema.describe("The organization ID"),
   cursor: PageTokenSchema,
   limit: LimitSchema,
+  include_body: z.boolean().optional().default(false).describe("Include full message body in response"),
 }).strict();

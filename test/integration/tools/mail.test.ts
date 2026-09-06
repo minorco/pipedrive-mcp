@@ -347,3 +347,107 @@ describe("pipedrive_organization_mail_messages_list", () => {
     expect(parsed.truncated).toBe(false);
   });
 });
+
+// --------------- Visibility counts and include_body on entity mail listers ---------------
+
+describe("associated mail listers: visibility counts", () => {
+  const dealCount = (count: number) =>
+    nock(BASE_URL)
+      .get("/api/v2/deals/117")
+      .query((q) => q.include_fields === "email_messages_count")
+      .reply(200, { success: true, data: { id: 117, email_messages_count: count } });
+
+  it("reports visible vs reported counts with a visibility note when they differ", async () => {
+    nock(BASE_URL).get("/api/v1/deals/117/mailMessages").query(true).reply(200, fixturesV1("deal-mail-messages-list.json"));
+    dealCount(26);
+
+    const { result, data } = await callTool("pipedrive_deal_mail_messages_list", { deal_id: 117 });
+    expect(result.isError).toBeFalsy();
+    const parsed = data as Record<string, unknown>;
+    expect(parsed.reported_count).toBe(26);
+    expect(parsed.visible_count).toBe(1);
+    expect(String(parsed.note)).toContain("visible to the authenticated user");
+    expect(String(parsed.note)).toContain("1 of the 26");
+  });
+
+  it("omits the note when every counted message is visible", async () => {
+    nock(BASE_URL).get("/api/v1/deals/117/mailMessages").query(true).reply(200, fixturesV1("deal-mail-messages-list.json"));
+    dealCount(1);
+
+    const { data } = await callTool("pipedrive_deal_mail_messages_list", { deal_id: 117 });
+    const parsed = data as Record<string, unknown>;
+    expect(parsed.reported_count).toBe(1);
+    expect(parsed.visible_count).toBe(1);
+    expect(parsed).not.toHaveProperty("note");
+  });
+
+  it("still returns the listing when the count lookup fails", async () => {
+    nock(BASE_URL).get("/api/v1/deals/117/mailMessages").query(true).reply(200, fixturesV1("deal-mail-messages-list.json"));
+    nock(BASE_URL).get("/api/v2/deals/117").query(true).reply(404, { success: false, error: "Deal not found" });
+
+    const { result, data } = await callTool("pipedrive_deal_mail_messages_list", { deal_id: 117 });
+    expect(result.isError).toBeFalsy();
+    const parsed = data as Record<string, unknown>;
+    expect((parsed.items as unknown[]).length).toBe(1);
+    expect(parsed.reported_count).toBeNull();
+    expect(parsed.visible_count).toBe(1);
+  });
+
+  it("leaves visible_count null on a non-terminal page and skips the count lookup mid-walk", async () => {
+    const fixture = fixturesV1("deal-mail-messages-list.json");
+    fixture.additional_data.pagination = { start: 25, limit: 25, more_items_in_collection: true, next_start: 50 };
+    nock(BASE_URL).get("/api/v1/deals/117/mailMessages").query((q) => q.start === "25").reply(200, fixture);
+    const count = dealCount(26);
+
+    const { data } = await callTool("pipedrive_deal_mail_messages_list", { deal_id: 117, cursor: "offset:25" });
+    const parsed = data as Record<string, unknown>;
+    expect(parsed.next_page_token).toBe("offset:50");
+    expect(parsed.visible_count).toBeNull();
+    expect(parsed.reported_count).toBeNull();
+    expect(count.isDone()).toBe(false);
+  });
+
+  it("looks up the count on a terminal page mid-walk and computes visible_count from the offset", async () => {
+    const fixture = fixturesV1("deal-mail-messages-list.json");
+    fixture.additional_data.pagination = { start: 50, limit: 25, more_items_in_collection: false };
+    nock(BASE_URL).get("/api/v1/deals/117/mailMessages").query((q) => q.start === "50").reply(200, fixture);
+    dealCount(60);
+
+    const { data } = await callTool("pipedrive_deal_mail_messages_list", { deal_id: 117, cursor: "offset:50" });
+    const parsed = data as Record<string, unknown>;
+    expect(parsed.visible_count).toBe(51);
+    expect(parsed.reported_count).toBe(60);
+    expect(String(parsed.note)).toContain("51 of the 60");
+  });
+
+  it("uses the persons and organizations v2 endpoints for the other listers", async () => {
+    nock(BASE_URL).get("/api/v1/persons/201/mailMessages").query(true).reply(200, fixturesV1("person-mail-messages-list.json"));
+    const person = nock(BASE_URL).get("/api/v2/persons/201").query((q) => q.include_fields === "email_messages_count").reply(200, { success: true, data: { id: 201, email_messages_count: 3 } });
+    nock(BASE_URL).get("/api/v1/organizations/301/mailMessages").query(true).reply(200, fixturesV1("organization-mail-messages-list.json"));
+    const org = nock(BASE_URL).get("/api/v2/organizations/301").query((q) => q.include_fields === "email_messages_count").reply(200, { success: true, data: { id: 301, email_messages_count: 1 } });
+
+    const p = await callTool("pipedrive_person_mail_messages_list", { person_id: 201 });
+    const o = await callTool("pipedrive_organization_mail_messages_list", { org_id: 301 });
+    expect((p.data as Record<string, unknown>).reported_count).toBe(3);
+    expect(String((p.data as Record<string, unknown>).note)).toContain("this person");
+    expect((o.data as Record<string, unknown>).reported_count).toBe(1);
+    expect(person.isDone()).toBe(true);
+    expect(org.isDone()).toBe(true);
+  });
+});
+
+describe("associated mail listers: include_body", () => {
+  it("forwards include_body=1 when requested and 0 by default", async () => {
+    const withBody = nock(BASE_URL).get("/api/v1/deals/117/mailMessages").query((q) => q.include_body === "1").reply(200, fixturesV1("deal-mail-messages-list.json"));
+    await callTool("pipedrive_deal_mail_messages_list", { deal_id: 117, include_body: true });
+    expect(withBody.isDone()).toBe(true);
+
+    const noBody = nock(BASE_URL).get("/api/v1/persons/201/mailMessages").query((q) => q.include_body === "0").reply(200, fixturesV1("person-mail-messages-list.json"));
+    await callTool("pipedrive_person_mail_messages_list", { person_id: 201 });
+    expect(noBody.isDone()).toBe(true);
+
+    const orgBody = nock(BASE_URL).get("/api/v1/organizations/301/mailMessages").query((q) => q.include_body === "1").reply(200, fixturesV1("organization-mail-messages-list.json"));
+    await callTool("pipedrive_organization_mail_messages_list", { org_id: 301, include_body: true });
+    expect(orgBody.isDone()).toBe(true);
+  });
+});
