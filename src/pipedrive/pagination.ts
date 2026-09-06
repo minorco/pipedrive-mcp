@@ -94,8 +94,20 @@ export function extractNextPageToken(
     const pagination = (responseData.additional_data as Record<string, unknown>)?.pagination as
       | Record<string, unknown>
       | undefined;
-    if (pagination?.more_items_in_collection && pagination.next_start != null) {
+    if (!pagination?.more_items_in_collection) return null;
+    if (pagination.next_start != null) {
       return encodePageToken("offset", pagination.next_start as number);
+    }
+    // Pipedrive v1 sometimes reports more_items_in_collection without a
+    // next_start (the deal/person/org mailMessages endpoints in particular).
+    // Fall back to start + limit so callers can keep paging instead of
+    // silently stopping short of the full collection.
+    if (pagination.start != null && pagination.limit != null) {
+      const start = Number(pagination.start);
+      const limit = Number(pagination.limit);
+      if (Number.isFinite(start) && Number.isFinite(limit) && limit > 0) {
+        return encodePageToken("offset", start + limit);
+      }
     }
     return null;
   }
