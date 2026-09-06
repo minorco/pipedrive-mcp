@@ -1,0 +1,44 @@
+{
+  "success": true,
+  "data": [
+    {
+      "id": 9010,
+      "user_id": 101,
+      "deal_id": null,
+      "person_id": 201,
+      "org_id": null,
+      "product_id": null,
+      "activity_id": null,
+      "lead_id": null,
+      "log_id": null,
+      "add_time": "2026-03-20 10:00:00",
+      "update_time": "2026-03-20 10:00:00",
+      "file_name": "card.jpg",
+      "file_type": "img",
+      "file_size": 4000,
+      "active_flag": true,
+      "inline_flag": false,
+      "remote_location": "s3",
+      "remote_id": "",
+      "cid": "",
+      "s3_bucket": "pipedrive-files",
+      "mail_message_id": null,
+      "mail_template_id": null,
+      "deal_name": null,
+      "person_name": "Jane Smith",
+      "org_name": null,
+      "product_name": null,
+      "lead_name": null,
+      "url": "https://testcompany.pipedrive.com/api/v1/files/0/download",
+      "name": "Business card.jpg",
+      "description": null
+    }
+  ],
+  "additional_data": {
+    "pagination": {
+      "start": 0,
+      "limit": 25,
+      "more_items_in_collection": false
+    }
+  }
+}

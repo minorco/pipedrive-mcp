@@ -4,7 +4,8 @@ import { apiErrorResult, validationErrorResult } from "../mcp/errors.js";
 import { getContext } from "../server.js";
 import { withRetry } from "../pipedrive/retries.js";
 import { normalizeApiError, categorizeStatus } from "../pipedrive/error-normalizer.js";
-import { buildPaginationParams, buildPaginatedResult } from "../pipedrive/pagination.js";
+import { compactFile } from "../presenters/entities.js";
+import { resolveFilesEndpoint, buildFilePredicate, listFiles } from "../services/files.js";
 import { FilesListSchema, FilesGetSchema, FilesUploadSchema } from "../schemas/files.js";
 import { zodToJsonSchema } from "../schemas/zod-to-json.js";
 
@@ -12,33 +13,42 @@ async function handleFilesList(args: Record<string, unknown>): Promise<ToolResul
   const parsed = FilesListSchema.safeParse(args);
   if (!parsed.success) return validationErrorResult("pipedrive_files_list", parsed.error.message);
 
-  const { apiV1, rateLimiters, config } = getContext();
+  const { config } = getContext();
   const input = parsed.data;
   const limit = Math.min(input.limit ?? config.defaultLimit, config.maxLimit);
-  const paginationParams = buildPaginationParams("offset", limit, input.cursor);
+  const { path, endpointLabel } = resolveFilesEndpoint(input);
+  const predicate = buildFilePredicate(input);
 
-  const params: Record<string, string | number | boolean | undefined> = { ...paginationParams };
-  if (input.deal_id) params.deal_id = input.deal_id;
-  if (input.person_id) params.person_id = input.person_id;
-  if (input.org_id) params.org_id = input.org_id;
-  if (input.product_id) params.product_id = input.product_id;
-  if (input.activity_id) params.activity_id = input.activity_id;
-  if (input.lead_id) params.lead_id = input.lead_id;
-  if (input.sort) params.sort = input.sort;
+  const outcome = await listFiles({
+    path,
+    label: "pipedrive_files_list",
+    limit,
+    cursor: input.cursor,
+    sort: input.sort,
+    predicate,
+  });
 
-  const response = await rateLimiters.general.schedule(() =>
-    withRetry(() => apiV1.list<Record<string, unknown>>("/files", params), { label: "pipedrive_files_list" }),
-  );
+  if (!outcome.ok) return apiErrorResult(normalizeApiError(outcome.response, "pipedrive_files_list", endpointLabel));
 
-  if (response.status !== 200) return apiErrorResult(normalizeApiError(response, "pipedrive_files_list", "GET /files"));
-  const items = response.data.data ?? [];
-  const result = buildPaginatedResult(items, "offset", response.data as unknown as Record<string, unknown>);
-  const compact = result.items.map((f) => ({
-    id: f.id, name: f.name, file_name: f.file_name, file_type: f.file_type, file_size: f.file_size,
-    deal_id: f.deal_id, person_id: f.person_id, org_id: f.org_id,
-    add_time: f.add_time, update_time: f.update_time,
-  }));
-  return paginatedResult({ items: compact, next_page_token: result.next_page_token, approx_count: result.approx_count, truncated: result.truncated, pagination_mode: result.pagination_mode });
+  const { result, scan } = outcome;
+  const extra: Record<string, unknown> = {};
+  let message: string | undefined;
+  if (scan) {
+    extra.scan = scan;
+    if (scan.scan_truncated) {
+      message = `Scanned ${scan.pages_scanned} page(s) of the scoped listing without exhausting it; pass next_page_token to keep filtering.`;
+    }
+  }
+
+  return paginatedResult({
+    items: result.items.map(compactFile),
+    next_page_token: result.next_page_token,
+    approx_count: result.approx_count,
+    truncated: result.truncated,
+    pagination_mode: result.pagination_mode,
+    message,
+    extra,
+  });
 }
 
 async function handleFilesGet(args: Record<string, unknown>): Promise<ToolResult> {
@@ -54,10 +64,8 @@ async function handleFilesGet(args: Record<string, unknown>): Promise<ToolResult
 
   const file = response.data.data as Record<string, unknown>;
   const result: Record<string, unknown> = {
-    id: file.id, name: file.name, file_name: file.file_name, file_type: file.file_type,
-    file_size: file.file_size, deal_id: file.deal_id, person_id: file.person_id,
-    org_id: file.org_id, add_time: file.add_time, update_time: file.update_time,
-    description: file.description,
+    ...compactFile(file),
+    description: (file.description as string) ?? null,
   };
   if (parsed.data.include_download_url && file.url) {
     result.download_url = file.url;
@@ -152,7 +160,7 @@ async function handleFilesUpload(args: Record<string, unknown>): Promise<ToolRes
 }
 
 const tools: ToolDefinition[] = [
-  { name: "pipedrive_files_list", description: "List files, optionally scoped to an entity.", inputSchema: zodToJsonSchema(FilesListSchema), handler: handleFilesList },
+  { name: "pipedrive_files_list", description: "List files. Scope with exactly one of deal_id, person_id, org_id or product_id (account-wide recent files otherwise). activity_id and lead_id filter within a scope. Each file carries mail_message_id when it arrived as an email attachment.", inputSchema: zodToJsonSchema(FilesListSchema), handler: handleFilesList },
   { name: "pipedrive_files_get", description: "Get file metadata and optional download URL.", inputSchema: zodToJsonSchema(FilesGetSchema), handler: handleFilesGet },
   { name: "pipedrive_files_upload", description: "Upload a base64-encoded file and attach to an entity.", inputSchema: zodToJsonSchema(FilesUploadSchema), handler: handleFilesUpload },
 ];

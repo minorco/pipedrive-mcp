@@ -271,6 +271,51 @@ export function compactMailMessage(raw: Record<string, unknown>): CompactMailMes
   };
 }
 
+export interface CompactFile {
+  id: number;
+  name: string;
+  file_name: string | null;
+  file_type: string | null;
+  file_size: number | null;
+  deal_id: number | null;
+  person_id: number | null;
+  org_id: number | null;
+  product_id: number | null;
+  activity_id: number | null;
+  lead_id: string | null;
+  // Set when the file arrived as an email attachment; join key back to the mail
+  // message (the mail message object itself carries no attachment list).
+  mail_message_id: number | null;
+  mail_template_id: number | null;
+  // Inline attachments are usually signature images embedded in the email body.
+  inline_flag: boolean;
+  remote_location: string | null;
+  add_time: string | null;
+  update_time: string | null;
+}
+
+export function compactFile(raw: Record<string, unknown>): CompactFile {
+  return {
+    id: raw.id as number,
+    name: (raw.name as string) ?? "",
+    file_name: (raw.file_name as string) ?? null,
+    file_type: (raw.file_type as string) ?? null,
+    file_size: (raw.file_size as number) ?? null,
+    deal_id: (raw.deal_id as number) ?? null,
+    person_id: (raw.person_id as number) ?? null,
+    org_id: (raw.org_id as number) ?? null,
+    product_id: (raw.product_id as number) ?? null,
+    activity_id: (raw.activity_id as number) ?? null,
+    lead_id: (raw.lead_id as string) ?? null,
+    mail_message_id: (raw.mail_message_id as number) ?? null,
+    mail_template_id: (raw.mail_template_id as number) ?? null,
+    inline_flag: Boolean(raw.inline_flag),
+    remote_location: (raw.remote_location as string) ?? null,
+    add_time: (raw.add_time as string) ?? null,
+    update_time: (raw.update_time as string) ?? null,
+  };
+}
+
 export interface CompactProject {
   id: number;
   title: string;
