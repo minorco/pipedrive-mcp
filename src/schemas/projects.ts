@@ -10,6 +10,7 @@ import {
   FilterIdSchema,
   CustomFieldsSchema,
   CustomFieldsByNameSchema,
+  SearchTermSchema,
 } from "./common.js";
 
 // Pipedrive Projects (BETA API, paid add-on). Status values per the v2 docs.
@@ -39,7 +40,7 @@ export const ProjectsGetSchema = z.object({
 }).strict();
 
 export const ProjectsSearchSchema = z.object({
-  term: z.string().min(2).describe("Search term (min 2 characters)"),
+  term: SearchTermSchema,
   fields: z
     .enum(["custom_fields", "notes", "title", "description"])
     .optional()

@@ -21,6 +21,7 @@ import {
   DryRunSchema,
   ReasonSchema,
   idsFilterSchema,
+  SearchTermSchema,
 } from "./common.js";
 
 export const PersonsListSchema = z.object({
@@ -45,7 +46,7 @@ export const PersonsGetSchema = z.object({
 }).strict();
 
 export const PersonsSearchSchema = z.object({
-  term: z.string().min(1).describe("Search term"),
+  term: SearchTermSchema,
   fields: z.string().optional().describe("Fields to search in (e.g. 'name,email,phone,custom_fields')"),
   exact_match: z.boolean().optional().describe("Whether to do an exact match"),
   organization_id: z.coerce.number().int().positive().optional().describe("Filter by organization ID"),

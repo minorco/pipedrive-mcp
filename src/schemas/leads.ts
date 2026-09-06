@@ -15,6 +15,7 @@ import {
   ConfirmDeleteSchema,
   DryRunSchema,
   ReasonSchema,
+  SearchTermSchema,
 } from "./common.js";
 
 export const LeadsListSchema = z.object({
@@ -69,7 +70,7 @@ export const LeadsDeleteSchema = z.object({
 }).strict();
 
 export const LeadsSearchSchema = z.object({
-  term: z.string().min(1).describe("Search term"),
+  term: SearchTermSchema,
   fields: z.string().optional(),
   exact_match: z.boolean().optional(),
   person_id: z.coerce.number().int().positive().optional(),

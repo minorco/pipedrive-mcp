@@ -20,6 +20,7 @@ import {
   DryRunSchema,
   ReasonSchema,
   idsFilterSchema,
+  SearchTermSchema,
 } from "./common.js";
 
 export const OrganizationsListSchema = z.object({
@@ -43,7 +44,7 @@ export const OrganizationsGetSchema = z.object({
 }).strict();
 
 export const OrganizationsSearchSchema = z.object({
-  term: z.string().min(1).describe("Search term"),
+  term: SearchTermSchema,
   fields: z.string().optional().describe("Fields to search in (e.g. 'name,address,custom_fields')"),
   exact_match: z.boolean().optional().describe("Whether to do an exact match"),
   cursor: PageTokenSchema,
