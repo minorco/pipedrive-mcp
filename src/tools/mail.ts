@@ -7,6 +7,7 @@ import { normalizeApiError } from "../pipedrive/error-normalizer.js";
 import { buildPaginationParams, buildPaginatedResult } from "../pipedrive/pagination.js";
 import { compactMailThread, compactMailMessage } from "../presenters/entities.js";
 import { validateConfirmation, buildDryRunResult } from "../services/guards.js";
+import { fetchEmailMessagesCount, buildVisibilityMeta, type MailEntity } from "../services/mail-visibility.js";
 import {
   MailThreadsListSchema,
   MailThreadsGetSchema,
@@ -143,64 +144,78 @@ async function handleMailThreadsDelete(args: Record<string, unknown>): Promise<T
   return successResult({ message: `Mail thread ${input.thread_id} deleted` });
 }
 
-async function handleDealMailMessagesList(args: Record<string, unknown>): Promise<ToolResult> {
-  const parsed = DealMailMessagesListSchema.safeParse(args);
-  if (!parsed.success) return validationErrorResult("pipedrive_deal_mail_messages_list", parsed.error.message);
+interface AssociatedMailListInput {
+  cursor?: string;
+  limit?: number;
+  include_body?: boolean;
+}
 
+// Shared implementation for the deal/person/organization mail listers. Alongside
+// the page it reports how many messages Pipedrive counts on the entity versus
+// how many the authenticated user can actually see (see services/mail-visibility).
+async function listAssociatedMailMessages(
+  tool: string,
+  entity: MailEntity,
+  entityId: number,
+  path: string,
+  input: AssociatedMailListInput,
+): Promise<ToolResult> {
   const { apiV1, rateLimiters, config } = getContext();
-  const input = parsed.data;
   const limit = Math.min(input.limit ?? config.defaultLimit, config.maxLimit);
   const paginationParams = buildPaginationParams("offset", limit, input.cursor);
+  const params: Record<string, string | number | boolean | undefined> = {
+    ...paginationParams,
+    include_body: input.include_body ? 1 : 0,
+  };
 
   const response = await rateLimiters.general.schedule(() =>
-    withRetry(() => apiV1.list<Record<string, unknown>>(`/deals/${input.deal_id}/mailMessages`, paginationParams), { label: `pipedrive_deal_mail_messages_list ${input.deal_id}` }),
+    withRetry(() => apiV1.list<Record<string, unknown>>(path, params), { label: `${tool} ${entityId}` }),
   );
 
-  if (response.status !== 200) return apiErrorResult(normalizeApiError(response, "pipedrive_deal_mail_messages_list", `GET /deals/${input.deal_id}/mailMessages`));
+  if (response.status !== 200) return apiErrorResult(normalizeApiError(response, tool, `GET ${path}`));
 
   const items = response.data.data ?? [];
   const result = buildPaginatedResult(items, "offset", response.data as unknown as Record<string, unknown>);
-  return paginatedResult({ items: result.items.map((i) => compactMailMessage(unwrapAssociatedMailMessage(i))), next_page_token: result.next_page_token, approx_count: result.approx_count, truncated: result.truncated, pagination_mode: result.pagination_mode });
+
+  // One count lookup per walk: on the first page, and again on the terminal
+  // page so the visible-vs-reported comparison lands where the walk ends.
+  const isFirstPage = !input.cursor;
+  const isTerminalPage = result.next_page_token === null;
+  const reportedCount = isFirstPage || isTerminalPage ? await fetchEmailMessagesCount(entity, entityId) : null;
+  const meta = buildVisibilityMeta({
+    entity,
+    reportedCount,
+    start: Number(paginationParams.start ?? 0),
+    itemsReturned: items.length,
+    hasMore: !isTerminalPage,
+  });
+
+  return paginatedResult({
+    items: result.items.map((i) => compactMailMessage(unwrapAssociatedMailMessage(i))),
+    next_page_token: result.next_page_token,
+    approx_count: result.approx_count,
+    truncated: result.truncated,
+    pagination_mode: result.pagination_mode,
+    extra: { ...meta },
+  });
+}
+
+async function handleDealMailMessagesList(args: Record<string, unknown>): Promise<ToolResult> {
+  const parsed = DealMailMessagesListSchema.safeParse(args);
+  if (!parsed.success) return validationErrorResult("pipedrive_deal_mail_messages_list", parsed.error.message);
+  return listAssociatedMailMessages("pipedrive_deal_mail_messages_list", "deal", parsed.data.deal_id, `/deals/${parsed.data.deal_id}/mailMessages`, parsed.data);
 }
 
 async function handlePersonMailMessagesList(args: Record<string, unknown>): Promise<ToolResult> {
   const parsed = PersonMailMessagesListSchema.safeParse(args);
   if (!parsed.success) return validationErrorResult("pipedrive_person_mail_messages_list", parsed.error.message);
-
-  const { apiV1, rateLimiters, config } = getContext();
-  const input = parsed.data;
-  const limit = Math.min(input.limit ?? config.defaultLimit, config.maxLimit);
-  const paginationParams = buildPaginationParams("offset", limit, input.cursor);
-
-  const response = await rateLimiters.general.schedule(() =>
-    withRetry(() => apiV1.list<Record<string, unknown>>(`/persons/${input.person_id}/mailMessages`, paginationParams), { label: `pipedrive_person_mail_messages_list ${input.person_id}` }),
-  );
-
-  if (response.status !== 200) return apiErrorResult(normalizeApiError(response, "pipedrive_person_mail_messages_list", `GET /persons/${input.person_id}/mailMessages`));
-
-  const items = response.data.data ?? [];
-  const result = buildPaginatedResult(items, "offset", response.data as unknown as Record<string, unknown>);
-  return paginatedResult({ items: result.items.map((i) => compactMailMessage(unwrapAssociatedMailMessage(i))), next_page_token: result.next_page_token, approx_count: result.approx_count, truncated: result.truncated, pagination_mode: result.pagination_mode });
+  return listAssociatedMailMessages("pipedrive_person_mail_messages_list", "person", parsed.data.person_id, `/persons/${parsed.data.person_id}/mailMessages`, parsed.data);
 }
 
 async function handleOrganizationMailMessagesList(args: Record<string, unknown>): Promise<ToolResult> {
   const parsed = OrganizationMailMessagesListSchema.safeParse(args);
   if (!parsed.success) return validationErrorResult("pipedrive_organization_mail_messages_list", parsed.error.message);
-
-  const { apiV1, rateLimiters, config } = getContext();
-  const input = parsed.data;
-  const limit = Math.min(input.limit ?? config.defaultLimit, config.maxLimit);
-  const paginationParams = buildPaginationParams("offset", limit, input.cursor);
-
-  const response = await rateLimiters.general.schedule(() =>
-    withRetry(() => apiV1.list<Record<string, unknown>>(`/organizations/${input.org_id}/mailMessages`, paginationParams), { label: `pipedrive_organization_mail_messages_list ${input.org_id}` }),
-  );
-
-  if (response.status !== 200) return apiErrorResult(normalizeApiError(response, "pipedrive_organization_mail_messages_list", `GET /organizations/${input.org_id}/mailMessages`));
-
-  const items = response.data.data ?? [];
-  const result = buildPaginatedResult(items, "offset", response.data as unknown as Record<string, unknown>);
-  return paginatedResult({ items: result.items.map((i) => compactMailMessage(unwrapAssociatedMailMessage(i))), next_page_token: result.next_page_token, approx_count: result.approx_count, truncated: result.truncated, pagination_mode: result.pagination_mode });
+  return listAssociatedMailMessages("pipedrive_organization_mail_messages_list", "organization", parsed.data.org_id, `/organizations/${parsed.data.org_id}/mailMessages`, parsed.data);
 }
 
 const tools: ToolDefinition[] = [
@@ -210,9 +225,9 @@ const tools: ToolDefinition[] = [
   { name: "pipedrive_mail_messages_get", description: "Get a single mail message by ID. Set include_body to true for full content. To fetch a message's attachments, call pipedrive_files_list with the same entity ID plus mail_message_id.", inputSchema: zodToJsonSchema(MailMessagesGetSchema), handler: handleMailMessagesGet },
   { name: "pipedrive_mail_threads_update", description: "Update a mail thread: link to deal/lead, mark read/unread, archive/unarchive, share.", inputSchema: zodToJsonSchema(MailThreadsUpdateSchema), handler: handleMailThreadsUpdate },
   { name: "pipedrive_mail_threads_delete", description: 'Delete a mail thread. Requires confirm: "DELETE". Supports dry_run.', inputSchema: zodToJsonSchema(MailThreadsDeleteSchema), handler: handleMailThreadsDelete },
-  { name: "pipedrive_deal_mail_messages_list", description: "List mail messages linked to a deal. To fetch a message's attachments, call pipedrive_files_list with the same entity ID plus mail_message_id.", inputSchema: zodToJsonSchema(DealMailMessagesListSchema), handler: handleDealMailMessagesList },
-  { name: "pipedrive_person_mail_messages_list", description: "List mail messages linked to a person. To fetch a message's attachments, call pipedrive_files_list with the same entity ID plus mail_message_id.", inputSchema: zodToJsonSchema(PersonMailMessagesListSchema), handler: handlePersonMailMessagesList },
-  { name: "pipedrive_organization_mail_messages_list", description: "List mail messages linked to an organization. To fetch a message's attachments, call pipedrive_files_list with the same entity ID plus mail_message_id.", inputSchema: zodToJsonSchema(OrganizationMailMessagesListSchema), handler: handleOrganizationMailMessagesList },
+  { name: "pipedrive_deal_mail_messages_list", description: "List mail messages linked to a deal. Returns only messages visible to the authenticated user; compare visible_count with reported_count. To fetch a message's attachments, call pipedrive_files_list with the same entity ID plus mail_message_id.", inputSchema: zodToJsonSchema(DealMailMessagesListSchema), handler: handleDealMailMessagesList },
+  { name: "pipedrive_person_mail_messages_list", description: "List mail messages linked to a person. Returns only messages visible to the authenticated user; compare visible_count with reported_count. To fetch a message's attachments, call pipedrive_files_list with the same entity ID plus mail_message_id.", inputSchema: zodToJsonSchema(PersonMailMessagesListSchema), handler: handlePersonMailMessagesList },
+  { name: "pipedrive_organization_mail_messages_list", description: "List mail messages linked to an organization. Returns only messages visible to the authenticated user; compare visible_count with reported_count. To fetch a message's attachments, call pipedrive_files_list with the same entity ID plus mail_message_id.", inputSchema: zodToJsonSchema(OrganizationMailMessagesListSchema), handler: handleOrganizationMailMessagesList },
 ];
 
 registerTools(tools);
