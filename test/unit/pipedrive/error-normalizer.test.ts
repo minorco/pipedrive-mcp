@@ -18,6 +18,29 @@ describe("normalizeApiError", () => {
     expect(err.guidance).toContain("API token");
   });
 
+  it("categorizes 403 as forbidden (not auth) with scope guidance", () => {
+    const err = normalizeApiError(
+      { status: 403, data: { error: "Scope and URL mismatch" }, headers: {}, durationMs: 40 },
+      "pipedrive_webhooks_list",
+      "GET /webhooks",
+    );
+    expect(err.category).toBe("forbidden");
+    expect(err.retryable).toBe(false);
+    expect(err.guidance).toContain("scope");
+    expect(err.guidance).toContain("not a token expiry");
+  });
+
+  it("categorizes 402 as plan with add-on guidance", () => {
+    const err = normalizeApiError(
+      { status: 402, data: { error: "Required suites missing" }, headers: {}, durationMs: 40 },
+      "pipedrive_projects_list",
+      "GET /projects",
+    );
+    expect(err.category).toBe("plan");
+    expect(err.retryable).toBe(false);
+    expect(err.guidance).toContain("add-on");
+  });
+
   it("categorizes 404 as not_found", () => {
     const err = normalizeApiError(
       { status: 404, data: { error: "Not found" }, headers: {}, durationMs: 50 },
