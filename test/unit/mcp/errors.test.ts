@@ -1,7 +1,10 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
+const captureError = vi.fn();
+const addBreadcrumb = vi.fn();
 vi.mock("../../../src/sentry.js", () => ({
-  captureError: vi.fn(),
+  captureError: (...args: unknown[]) => captureError(...args),
+  addBreadcrumb: (...args: unknown[]) => addBreadcrumb(...args),
 }));
 
 import {
@@ -63,5 +66,40 @@ describe("errorMeta on tool results", () => {
   it("successResult carries no errorMeta", () => {
     const result = successResult({ ok: true });
     expect(result.errorMeta).toBeUndefined();
+  });
+});
+
+describe("Sentry capture policy", () => {
+  beforeEach(() => {
+    captureError.mockClear();
+    addBreadcrumb.mockClear();
+  });
+
+  it("does not capture not_found errors, but leaves a breadcrumb", () => {
+    const result = apiErrorResult(
+      makeNormalized({ category: "not_found", status: 404, pipedrive_error: "Deal not found", endpoint: "GET /deals/16898" }),
+    );
+    expect(result.isError).toBe(true);
+    expect(result.errorMeta).toEqual({ category: "not_found", status: 404 });
+    expect(captureError).not.toHaveBeenCalled();
+    expect(addBreadcrumb).toHaveBeenCalledTimes(1);
+    expect(addBreadcrumb.mock.calls[0][0]).toMatchObject({ level: "info", message: "pipedrive_deals_list 404 GET /deals/16898" });
+  });
+
+  it("does not capture rate_limit errors", () => {
+    apiErrorResult(makeNormalized({ category: "rate_limit", status: 429, retryable: true }));
+    expect(captureError).not.toHaveBeenCalled();
+  });
+
+  it("captures forbidden errors at warning level", () => {
+    apiErrorResult(makeNormalized({ category: "forbidden", status: 403 }));
+    expect(captureError).toHaveBeenCalledTimes(1);
+    expect(captureError.mock.calls[0][1]).toMatchObject({ category: "forbidden", status: 403, level: "warning" });
+  });
+
+  it("captures plan errors at warning level", () => {
+    apiErrorResult(makeNormalized({ category: "plan", status: 402 }));
+    expect(captureError).toHaveBeenCalledTimes(1);
+    expect(captureError.mock.calls[0][1]).toMatchObject({ category: "plan", status: 402 });
   });
 });

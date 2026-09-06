@@ -7,10 +7,17 @@ function response(status: number, error = ""): HttpResponse {
 }
 
 describe("normalizeProjectsApiError", () => {
-  it("appends Projects add-on guidance on 403", () => {
+  it("appends Projects add-on guidance on 403 and keeps the forbidden category", () => {
     const err = normalizeProjectsApiError(response(403), "pipedrive_projects_list", "GET /projects");
-    expect(err.category).toBe("auth");
+    expect(err.category).toBe("forbidden");
     expect(err.guidance).toContain("Projects is a paid Pipedrive add-on");
+  });
+
+  it("appends Projects add-on guidance on 402 Required suites missing", () => {
+    const err = normalizeProjectsApiError(response(402, "Required suites missing"), "pipedrive_projects_list", "GET /projects");
+    expect(err.category).toBe("plan");
+    expect(err.guidance).toContain("Projects is a paid Pipedrive add-on");
+    expect(err.guidance).toContain("402");
   });
 
   it("leaves other statuses untouched", () => {

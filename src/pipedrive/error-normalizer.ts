@@ -5,6 +5,8 @@ import { parseRateLimitHeaders } from "./rate-limit.js";
 export type ErrorCategory =
   | "validation"
   | "auth"
+  | "forbidden"
+  | "plan"
   | "not_found"
   | "conflict"
   | "rate_limit"
@@ -24,7 +26,10 @@ export interface NormalizedError {
 
 export function categorizeStatus(status: number): ErrorCategory {
   if (status === 401) return "auth";
-  if (status === 403) return "auth";
+  // 402/403 are not token problems: a refresh-and-retry cannot fix them, so
+  // they get their own categories (the Cloudflare worker only retries "auth").
+  if (status === 402) return "plan";
+  if (status === 403) return "forbidden";
   if (status === 404) return "not_found";
   if (status === 409) return "conflict";
   if (status === 422 || status === 400) return "validation";
@@ -37,8 +42,10 @@ function getGuidance(status: number, pipedriveError: string): string {
   switch (status) {
     case 401:
       return "Authentication failed. The API token or OAuth token may be invalid or expired. Check PIPEDRIVE_API_TOKEN or PIPEDRIVE_OAUTH_TOKEN.";
+    case 402:
+      return "This Pipedrive plan or add-on does not include this feature (for example the Projects add-on). Upgrade the plan or enable the add-on; retrying will not help.";
     case 403:
-      return "User lacks permission for this operation.";
+      return "Permission denied. The authenticated user lacks rights to this entity or action, or the OAuth app is missing the required scope. This is not a token expiry; re-authenticating will not help.";
     case 404:
       return "Entity not found. Verify the ID is correct.";
     case 409:
