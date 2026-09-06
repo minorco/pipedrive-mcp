@@ -124,6 +124,33 @@ describe("extractNextPageToken", () => {
     expect(token).toBe("offset:25");
   });
 
+  it("falls back to start + limit when v1 reports more items without next_start", () => {
+    const token = extractNextPageToken("offset", {
+      additional_data: {
+        pagination: { start: 25, limit: 25, more_items_in_collection: true },
+      },
+    });
+    expect(token).toBe("offset:50");
+  });
+
+  it("prefers next_start over the start + limit fallback", () => {
+    const token = extractNextPageToken("offset", {
+      additional_data: {
+        pagination: { start: 0, limit: 25, more_items_in_collection: true, next_start: 30 },
+      },
+    });
+    expect(token).toBe("offset:30");
+  });
+
+  it("returns null when more items are reported but neither next_start nor start/limit exist", () => {
+    const token = extractNextPageToken("offset", {
+      additional_data: {
+        pagination: { more_items_in_collection: true },
+      },
+    });
+    expect(token).toBeNull();
+  });
+
   it("returns null when v1 has no more items", () => {
     const token = extractNextPageToken("offset", {
       additional_data: {
@@ -140,6 +167,16 @@ describe("extractNextPageToken", () => {
 });
 
 describe("buildPaginatedResult", () => {
+  it("marks the page truncated when v1 omits next_start but reports more items", () => {
+    const result = buildPaginatedResult(
+      [{ id: 1 }],
+      "offset",
+      { additional_data: { pagination: { start: 0, limit: 25, more_items_in_collection: true } } },
+    );
+    expect(result.next_page_token).toBe("offset:25");
+    expect(result.truncated).toBe(true);
+  });
+
   it("builds result with truncation info", () => {
     const result = buildPaginatedResult(
       [{ id: 1 }, { id: 2 }],
