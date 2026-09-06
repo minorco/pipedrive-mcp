@@ -7,6 +7,7 @@ import {
   compactNote,
   compactMailThread,
   compactMailMessage,
+  compactFile,
 } from "../../../src/presenters/entities.js";
 
 describe("compactDeal", () => {
@@ -219,5 +220,31 @@ describe("compactMailMessage", () => {
     expect(compact.to_emails).toEqual([]);
     expect(compact.cc_emails).toEqual([]);
     expect(compact.body).toBeNull();
+  });
+});
+
+describe("compactFile", () => {
+  it("whitelists file fields including the mail message join key", () => {
+    const compact = compactFile({
+      id: 9001, name: "Proposal.pdf", file_name: "proposal_abc.pdf", file_type: "pdf", file_size: 50942,
+      deal_id: 117, person_id: 201, org_id: null, product_id: null, activity_id: null, lead_id: null,
+      mail_message_id: 800, mail_template_id: null, inline_flag: 0, remote_location: "s3",
+      add_time: "2026-03-20 10:00:00", update_time: "2026-03-20 10:00:00",
+      s3_bucket: "secret-bucket", cid: "abc", url: "https://x/download",
+    });
+    expect(compact.id).toBe(9001);
+    expect(compact.mail_message_id).toBe(800);
+    expect(compact.inline_flag).toBe(false);
+    expect(compact.org_id).toBeNull();
+    expect(compact).not.toHaveProperty("s3_bucket");
+    expect(compact).not.toHaveProperty("url");
+  });
+
+  it("defaults missing fields to null and coerces inline_flag to boolean", () => {
+    const compact = compactFile({ id: 1, inline_flag: 1 });
+    expect(compact.name).toBe("");
+    expect(compact.file_size).toBeNull();
+    expect(compact.mail_message_id).toBeNull();
+    expect(compact.inline_flag).toBe(true);
   });
 });

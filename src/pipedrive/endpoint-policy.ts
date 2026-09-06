@@ -104,6 +104,13 @@ const policies: Record<string, EndpointPolicy> = {
   "files.list": { version: "v1", method: "GET", path: "/files", pagination: "offset" },
   "files.get": { version: "v1", method: "GET", path: "/files/:id", pagination: "none" },
   "files.upload": { version: "v1", method: "POST", path: "/files", pagination: "none" },
+  // GET /files ignores entity query params (deal_id etc. are silently dropped and the
+  // account-wide listing is returned). Scoped listing must use the per-entity
+  // sub-resources below. Leads and activities have no files sub-resource in v1.
+  "dealFiles.list": { version: "v1", method: "GET", path: "/deals/:id/files", pagination: "offset" },
+  "personFiles.list": { version: "v1", method: "GET", path: "/persons/:id/files", pagination: "offset" },
+  "organizationFiles.list": { version: "v1", method: "GET", path: "/organizations/:id/files", pagination: "offset" },
+  "productFiles.list": { version: "v1", method: "GET", path: "/products/:id/files", pagination: "offset" },
 
   // Leads (v1 CRUD, v2 search)
   "leads.list": { version: "v1", method: "GET", path: "/leads", pagination: "offset" },

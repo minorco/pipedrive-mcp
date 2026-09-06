@@ -48,8 +48,12 @@ export function paginatedResult(data: {
   truncated: boolean;
   pagination_mode: string;
   message?: string;
+  // Additional top-level fields for the caller (e.g. scan metadata, counts).
+  // Never overrides the standard keys.
+  extra?: Record<string, unknown>;
 }): ToolResult {
   const output: Record<string, unknown> = {
+    ...(data.extra ?? {}),
     items: data.items,
     next_page_token: data.next_page_token,
     truncated: data.truncated,
