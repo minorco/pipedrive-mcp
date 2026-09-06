@@ -21,6 +21,7 @@ import {
   DryRunSchema,
   ReasonSchema,
   idsFilterSchema,
+  SearchTermSchema,
 } from "./common.js";
 
 export const DealsListSchema = z.object({
@@ -49,7 +50,7 @@ export const DealsGetSchema = z.object({
 }).strict();
 
 export const DealsSearchSchema = z.object({
-  term: z.string().min(1).describe("Search term"),
+  term: SearchTermSchema,
   fields: z.string().optional().describe("Fields to search in (e.g. 'title,custom_fields')"),
   exact_match: z.boolean().optional().describe("Whether to do an exact match"),
   person_id: z.coerce.number().int().positive().optional().describe("Filter by person ID"),

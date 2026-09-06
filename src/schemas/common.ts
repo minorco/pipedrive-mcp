@@ -46,6 +46,15 @@ export const SearchLimitSchema = z.coerce
   .optional()
   .describe("Number of search results per page (default 10, max 50)");
 
+// Pipedrive search endpoints reject terms shorter than 2 characters with a 400
+// ("querystring/term must NOT have fewer than 2 characters"). Enforce it here so
+// the constraint reaches clients through the published JSON Schema (minLength).
+export const SearchTermSchema = z
+  .string()
+  .trim()
+  .min(2, "Pipedrive search requires a term of at least 2 characters.")
+  .describe("Search term (minimum 2 characters)");
+
 export const PageTokenSchema = z
   .string()
   .regex(

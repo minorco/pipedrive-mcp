@@ -17,6 +17,7 @@ import {
   DryRunSchema,
   ReasonSchema,
   idsFilterSchema,
+  SearchTermSchema,
 } from "./common.js";
 
 export const ProductsListSchema = z.object({
@@ -79,7 +80,7 @@ export const ProductsDeleteSchema = z.object({
 }).strict();
 
 export const ProductsSearchSchema = z.object({
-  term: z.string().min(1).describe("Search term"),
+  term: SearchTermSchema,
   fields: z.string().optional().describe("Fields to search in"),
   exact_match: z.boolean().optional(),
   cursor: PageTokenSchema,
