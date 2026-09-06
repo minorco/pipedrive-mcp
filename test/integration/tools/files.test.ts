@@ -130,6 +130,92 @@ describe("pipedrive_files_list scoping", () => {
   });
 });
 
+describe("pipedrive_files_list mail_message_id filter", () => {
+  const page = (items: unknown[], start: number, nextStart: number | null) => ({
+    success: true,
+    data: items,
+    additional_data: {
+      pagination: {
+        start,
+        limit: 100,
+        more_items_in_collection: nextStart !== null,
+        ...(nextStart !== null ? { next_start: nextStart } : {}),
+      },
+    },
+  });
+
+  it("returns only the non-inline attachments of that message", async () => {
+    nock(BASE_URL).get("/api/v1/deals/117/files").query(true).reply(200, fixturesV1("deal-files-list.json"));
+    const { result, data } = await callTool("pipedrive_files_list", { deal_id: 117, mail_message_id: 800 });
+    expect(result.isError).toBeFalsy();
+    const parsed = data as Record<string, unknown>;
+    expect((parsed.items as Items).map((f) => f.id)).toEqual([9001]);
+    expect(parsed.scan).toEqual({ pages_scanned: 1, scan_truncated: false });
+  });
+
+  it("include_inline also returns inline attachments", async () => {
+    nock(BASE_URL).get("/api/v1/deals/117/files").query(true).reply(200, fixturesV1("deal-files-list.json"));
+    const { data } = await callTool("pipedrive_files_list", { deal_id: 117, mail_message_id: 800, include_inline: true });
+    expect(((data as Record<string, unknown>).items as Items).map((f) => f.id)).toEqual([9001, 9002]);
+  });
+
+  it("rejects mail_message_id without a scope, explaining how to call it", async () => {
+    const { result } = await callTool("pipedrive_files_list", { mail_message_id: 800 });
+    expect(result.isError).toBe(true);
+    expect(String((result.content[0] as { text: string }).text)).toContain("deal_id");
+    expect(nock.pendingMocks()).toEqual([]);
+  });
+
+  it("follows the underlying offsets across pages until a match is found", async () => {
+    const unrelated = { id: 8001, deal_id: 117, name: "other.pdf", mail_message_id: 700, inline_flag: false };
+    nock(BASE_URL)
+      .get("/api/v1/deals/117/files")
+      .query((q) => q.start === "0" && q.limit === "100")
+      .reply(200, page([unrelated], 0, 100));
+    nock(BASE_URL)
+      .get("/api/v1/deals/117/files")
+      .query((q) => q.start === "100" && q.limit === "100")
+      .reply(200, fixturesV1("deal-files-list.json"));
+
+    const { result, data } = await callTool("pipedrive_files_list", { deal_id: 117, mail_message_id: 800 });
+    expect(result.isError).toBeFalsy();
+    const parsed = data as Record<string, unknown>;
+    expect((parsed.items as Items).map((f) => f.id)).toEqual([9001]);
+    expect(parsed.scan).toEqual({ pages_scanned: 2, scan_truncated: false });
+    expect(parsed.next_page_token).toBeNull();
+  });
+
+  it("stops after five pages and returns a resumable token when nothing matched yet", async () => {
+    const unrelated = { id: 8001, deal_id: 117, name: "other.pdf", mail_message_id: 700, inline_flag: false };
+    nock(BASE_URL)
+      .get("/api/v1/deals/117/files")
+      .query(true)
+      .times(5)
+      .reply((uri) => {
+        const start = Number(new URL(uri, BASE_URL).searchParams.get("start"));
+        return [200, page([unrelated], start, start + 100)];
+      });
+
+    const { result, data } = await callTool("pipedrive_files_list", { deal_id: 117, mail_message_id: 800 });
+    expect(result.isError).toBeFalsy();
+    const parsed = data as Record<string, unknown>;
+    expect(parsed.items).toEqual([]);
+    expect(parsed.scan).toEqual({ pages_scanned: 5, scan_truncated: true });
+    expect(parsed.next_page_token).toBe("offset:500");
+    expect(parsed.truncated).toBe(true);
+    expect(String(parsed.message)).toContain("next_page_token");
+  });
+
+  it("resumes a scan from a continuation token", async () => {
+    nock(BASE_URL)
+      .get("/api/v1/deals/117/files")
+      .query((q) => q.start === "500")
+      .reply(200, fixturesV1("deal-files-list.json"));
+    const { data } = await callTool("pipedrive_files_list", { deal_id: 117, mail_message_id: 800, cursor: "offset:500" });
+    expect(((data as Record<string, unknown>).items as Items).map((f) => f.id)).toEqual([9001]);
+  });
+});
+
 describe("pipedrive_files_get", () => {
   it("returns the compact file with description and a download URL by default", async () => {
     nock(BASE_URL).get("/api/v1/files/9001").query(true).reply(200, fixturesV1("files-get.json"));

@@ -50,6 +50,8 @@ export type FilePredicate = (file: RawFile) => boolean;
 export interface FileFilterInput {
   activity_id?: number;
   lead_id?: string;
+  mail_message_id?: number;
+  include_inline?: boolean;
 }
 
 // Client-side filters applied within a scoped listing. Returns undefined when no
@@ -63,6 +65,13 @@ export function buildFilePredicate(input: FileFilterInput): FilePredicate | unde
   if (input.lead_id !== undefined) {
     const id = input.lead_id;
     checks.push((f) => f.lead_id != null && String(f.lead_id) === id);
+  }
+  if (input.mail_message_id !== undefined) {
+    const id = input.mail_message_id;
+    checks.push((f) => Number(f.mail_message_id) === id);
+    // Inline attachments are almost always signature images and tracking
+    // pixels; hide them unless explicitly requested.
+    if (!input.include_inline) checks.push((f) => !f.inline_flag);
   }
   if (checks.length === 0) return undefined;
   return (f) => checks.every((check) => check(f));

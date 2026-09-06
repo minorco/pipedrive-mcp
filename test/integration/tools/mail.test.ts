@@ -293,6 +293,7 @@ describe("pipedrive_deal_mail_messages_list", () => {
     const items = parsed.items as Array<Record<string, unknown>>;
     expect(items.length).toBe(1);
     expect(items[0].id).toBe(801);
+    expect(items[0].mail_thread_id).toBe(701);
     expect(items[0].from_email).toBe("jane.smith@example.com");
     expect(parsed.truncated).toBe(false);
   });

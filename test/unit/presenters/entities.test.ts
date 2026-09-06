@@ -213,6 +213,24 @@ describe("compactMailMessage", () => {
     expect(compact.read_flag).toBe(true);
   });
 
+  it("exposes mail_thread_id and attachment flags when present", () => {
+    const compact = compactMailMessage({
+      id: 802, mail_thread_id: 701, has_attachments_flag: 1,
+      has_real_attachments_flag: 1, has_inline_attachments_flag: 0,
+    });
+    expect(compact.mail_thread_id).toBe(701);
+    expect(compact.has_attachments_flag).toBe(true);
+    expect(compact.has_real_attachments_flag).toBe(true);
+    expect(compact.has_inline_attachments_flag).toBe(false);
+  });
+
+  it("reports attachment flags as null when the source object omits them", () => {
+    const compact = compactMailMessage({ id: 803 });
+    expect(compact.mail_thread_id).toBeNull();
+    expect(compact.has_real_attachments_flag).toBeNull();
+    expect(compact.has_inline_attachments_flag).toBeNull();
+  });
+
   it("handles missing from/to/cc gracefully", () => {
     const compact = compactMailMessage({ id: 1, subject: "Minimal" });
     expect(compact.from_name).toBeNull();
