@@ -46,9 +46,12 @@ export interface VisibilityInput {
   hasMore: boolean;
 }
 
-// visible_count is only knowable on the terminal page (no further pages).
+// visible_count is only knowable on the terminal page (no further pages). A
+// page past the end of the collection (a stale or hand-built offset cursor)
+// returns nothing and tells us nothing about the total, so it stays null too.
 export function buildVisibilityMeta(input: VisibilityInput): VisibilityMeta {
-  const visible = input.hasMore ? null : input.start + input.itemsReturned;
+  const pastTheEnd = input.itemsReturned === 0 && input.start > 0;
+  const visible = input.hasMore || pastTheEnd ? null : input.start + input.itemsReturned;
   const meta: VisibilityMeta = { reported_count: input.reportedCount, visible_count: visible };
   if (visible !== null && input.reportedCount !== null && visible < input.reportedCount) {
     meta.note =
