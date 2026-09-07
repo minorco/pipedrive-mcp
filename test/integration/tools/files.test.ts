@@ -130,89 +130,94 @@ describe("pipedrive_files_list scoping", () => {
   });
 });
 
-describe("pipedrive_files_list mail_message_id filter", () => {
-  const page = (items: unknown[], start: number, nextStart: number | null) => ({
-    success: true,
-    data: items,
-    additional_data: {
-      pagination: {
-        start,
-        limit: 100,
-        more_items_in_collection: nextStart !== null,
-        ...(nextStart !== null ? { next_start: nextStart } : {}),
-      },
-    },
+describe("pipedrive_files_list mail_message_id lookup", () => {
+  // Synthetic id-ordered account listing: file i was added at BASE + i minutes.
+  // Message 800 was synced at BASE + 1995 minutes; its files sit at 1996..1998.
+  const BASE = Date.UTC(2026, 2, 20, 0, 0, 0);
+  const TOTAL = 2500;
+  const fmt = (ms: number) => new Date(ms).toISOString().slice(0, 19).replace("T", " ");
+  const fileAt = (i: number) => ({
+    id: 100000 + i,
+    name: `file-${i}.pdf`,
+    file_name: `file-${i}.pdf`,
+    file_type: "pdf",
+    file_size: 100,
+    deal_id: null,
+    person_id: null,
+    org_id: null,
+    mail_message_id: i === 1996 || i === 1997 ? 800 : i === 1998 ? 801 : null,
+    inline_flag: i === 1997,
+    add_time: fmt(BASE + i * 60_000),
+    update_time: fmt(BASE + i * 60_000),
   });
+  const mockListing = () =>
+    nock(BASE_URL)
+      .persist()
+      .get("/api/v1/files")
+      .query(true)
+      .reply((uri) => {
+        const u = new URL(uri, BASE_URL);
+        const start = Number(u.searchParams.get("start") ?? 0);
+        const limit = Number(u.searchParams.get("limit") ?? 25);
+        const items = Array.from({ length: Math.max(0, Math.min(limit, TOTAL - start)) }, (_, k) => fileAt(start + k));
+        return [200, { success: true, data: items, additional_data: { pagination: { start, limit, more_items_in_collection: start + items.length < TOTAL } } }];
+      });
+  const mockMessage = (addTime = fmt(BASE + 1995 * 60_000)) =>
+    nock(BASE_URL).get("/api/v1/mailbox/mailMessages/800").query(true).reply(200, { success: true, data: { id: 800, add_time: addTime, has_attachments_flag: 1 } });
 
-  it("returns only the non-inline attachments of that message", async () => {
-    nock(BASE_URL).get("/api/v1/deals/117/files").query(true).reply(200, fixturesV1("deal-files-list.json"));
-    const { result, data } = await callTool("pipedrive_files_list", { deal_id: 117, mail_message_id: 800 });
+  it("locates a message's attachments in the account-wide listing without a scope", async () => {
+    mockMessage();
+    mockListing();
+    const { result, data } = await callTool("pipedrive_files_list", { mail_message_id: 800 });
     expect(result.isError).toBeFalsy();
     const parsed = data as Record<string, unknown>;
-    expect((parsed.items as Items).map((f) => f.id)).toEqual([9001]);
-    expect(parsed.scan).toEqual({ pages_scanned: 1, scan_truncated: false });
+    expect((parsed.items as Items).map((f) => f.id)).toEqual([101996]);
+    const lookup = parsed.lookup as Record<string, number>;
+    expect(lookup.probes).toBeLessThan(40);
+    expect(lookup.pages_scanned).toBeLessThanOrEqual(2);
+    expect(lookup.window_start).toBeLessThanOrEqual(1996);
+    expect(parsed.mail_message_id).toBe(800);
   });
 
   it("include_inline also returns inline attachments", async () => {
-    nock(BASE_URL).get("/api/v1/deals/117/files").query(true).reply(200, fixturesV1("deal-files-list.json"));
-    const { data } = await callTool("pipedrive_files_list", { deal_id: 117, mail_message_id: 800, include_inline: true });
-    expect(((data as Record<string, unknown>).items as Items).map((f) => f.id)).toEqual([9001, 9002]);
+    mockMessage();
+    mockListing();
+    const { data } = await callTool("pipedrive_files_list", { mail_message_id: 800, include_inline: true });
+    expect(((data as Record<string, unknown>).items as Items).map((f) => f.id)).toEqual([101996, 101997]);
   });
 
-  it("rejects mail_message_id without a scope, explaining how to call it", async () => {
-    const { result } = await callTool("pipedrive_files_list", { mail_message_id: 800 });
-    expect(result.isError).toBe(true);
-    expect(String((result.content[0] as { text: string }).text)).toContain("deal_id");
-    expect(nock.pendingMocks()).toEqual([]);
+  it("handles ISO timestamps on the message and falls back to a full scan window when time is missing", async () => {
+    nock(BASE_URL).get("/api/v1/mailbox/mailMessages/800").query(true).reply(200, { success: true, data: { id: 800, add_time: new Date(BASE + 1995 * 60_000).toISOString() } });
+    mockListing();
+    const { data } = await callTool("pipedrive_files_list", { mail_message_id: 800 });
+    expect(((data as Record<string, unknown>).items as Items).map((f) => f.id)).toEqual([101996]);
   });
 
-  it("follows the underlying offsets across pages until a match is found", async () => {
-    const unrelated = { id: 8001, deal_id: 117, name: "other.pdf", mail_message_id: 700, inline_flag: false };
-    nock(BASE_URL)
-      .get("/api/v1/deals/117/files")
-      .query((q) => q.start === "0" && q.limit === "100")
-      .reply(200, page([unrelated], 0, 100));
-    nock(BASE_URL)
-      .get("/api/v1/deals/117/files")
-      .query((q) => q.start === "100" && q.limit === "100")
-      .reply(200, fixturesV1("deal-files-list.json"));
-
-    const { result, data } = await callTool("pipedrive_files_list", { deal_id: 117, mail_message_id: 800 });
-    expect(result.isError).toBeFalsy();
-    const parsed = data as Record<string, unknown>;
-    expect((parsed.items as Items).map((f) => f.id)).toEqual([9001]);
-    expect(parsed.scan).toEqual({ pages_scanned: 2, scan_truncated: false });
-    expect(parsed.next_page_token).toBeNull();
-  });
-
-  it("stops after five pages and returns a resumable token when nothing matched yet", async () => {
-    const unrelated = { id: 8001, deal_id: 117, name: "other.pdf", mail_message_id: 700, inline_flag: false };
-    nock(BASE_URL)
-      .get("/api/v1/deals/117/files")
-      .query(true)
-      .times(5)
-      .reply((uri) => {
-        const start = Number(new URL(uri, BASE_URL).searchParams.get("start"));
-        return [200, page([unrelated], start, start + 100)];
-      });
-
-    const { result, data } = await callTool("pipedrive_files_list", { deal_id: 117, mail_message_id: 800 });
+  it("reports an empty result with guidance when the message has no files", async () => {
+    nock(BASE_URL).get("/api/v1/mailbox/mailMessages/800").query(true).reply(200, { success: true, data: { id: 800, add_time: fmt(BASE + 100 * 60_000) } });
+    mockListing();
+    const { result, data } = await callTool("pipedrive_files_list", { mail_message_id: 800 });
     expect(result.isError).toBeFalsy();
     const parsed = data as Record<string, unknown>;
     expect(parsed.items).toEqual([]);
-    expect(parsed.scan).toEqual({ pages_scanned: 5, scan_truncated: true });
-    expect(parsed.next_page_token).toBe("offset:500");
-    expect(parsed.truncated).toBe(true);
-    expect(String(parsed.message)).toContain("next_page_token");
+    expect(String(parsed.message)).toContain("No attachment files");
   });
 
-  it("resumes a scan from a continuation token", async () => {
-    nock(BASE_URL)
-      .get("/api/v1/deals/117/files")
-      .query((q) => q.start === "500")
-      .reply(200, fixturesV1("deal-files-list.json"));
-    const { data } = await callTool("pipedrive_files_list", { deal_id: 117, mail_message_id: 800, cursor: "offset:500" });
-    expect(((data as Record<string, unknown>).items as Items).map((f) => f.id)).toEqual([9001]);
+  it("surfaces a missing message as a not_found error", async () => {
+    nock(BASE_URL).get("/api/v1/mailbox/mailMessages/800").query(true).reply(404, { success: false, error: "Mail message not found" });
+    const { result } = await callTool("pipedrive_files_list", { mail_message_id: 800 });
+    expect(result.isError).toBe(true);
+    expect(result.errorMeta).toEqual({ category: "not_found", status: 404 });
+    expect(String((result.content[0] as { text: string }).text)).toContain("GET /mailbox/mailMessages/800");
+  });
+
+  it("rejects mail_message_id combined with a scope or other filters", async () => {
+    const withScope = await callTool("pipedrive_files_list", { deal_id: 117, mail_message_id: 800 });
+    expect(withScope.result.isError).toBe(true);
+    expect(String((withScope.result.content[0] as { text: string }).text)).toContain("stands alone");
+    const withCursor = await callTool("pipedrive_files_list", { mail_message_id: 800, cursor: "offset:100" });
+    expect(withCursor.result.isError).toBe(true);
+    expect(nock.pendingMocks()).toEqual([]);
   });
 });
 

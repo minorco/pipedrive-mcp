@@ -5,7 +5,7 @@ import { getContext } from "../server.js";
 import { withRetry } from "../pipedrive/retries.js";
 import { normalizeApiError, categorizeStatus } from "../pipedrive/error-normalizer.js";
 import { compactFile } from "../presenters/entities.js";
-import { resolveFilesEndpoint, buildFilePredicate, listFiles } from "../services/files.js";
+import { resolveFilesEndpoint, buildFilePredicate, listFiles, findMailMessageFiles } from "../services/files.js";
 import { FilesListSchema, FilesGetSchema, FilesUploadSchema } from "../schemas/files.js";
 import { zodToJsonSchema } from "../schemas/zod-to-json.js";
 
@@ -16,6 +16,30 @@ async function handleFilesList(args: Record<string, unknown>): Promise<ToolResul
   const { config } = getContext();
   const input = parsed.data;
   const limit = Math.min(input.limit ?? config.defaultLimit, config.maxLimit);
+
+  if (input.mail_message_id !== undefined) {
+    const outcome = await findMailMessageFiles({
+      messageId: input.mail_message_id,
+      includeInline: input.include_inline ?? false,
+      label: "pipedrive_files_list",
+    });
+    if (!outcome.ok) return apiErrorResult(normalizeApiError(outcome.response, "pipedrive_files_list", outcome.endpoint));
+    return paginatedResult({
+      items: outcome.items.map(compactFile),
+      next_page_token: null,
+      approx_count: null,
+      truncated: false,
+      pagination_mode: "none",
+      extra: {
+        mail_message_id: input.mail_message_id,
+        lookup: outcome.lookup,
+        ...(outcome.items.length === 0
+          ? { message: "No attachment files found for this message. Inline images are hidden unless include_inline is true; a message with has_attachments_flag false has none." }
+          : {}),
+      },
+    });
+  }
+
   const { path, endpointLabel } = resolveFilesEndpoint(input);
   const predicate = buildFilePredicate(input);
 
@@ -160,7 +184,7 @@ async function handleFilesUpload(args: Record<string, unknown>): Promise<ToolRes
 }
 
 const tools: ToolDefinition[] = [
-  { name: "pipedrive_files_list", description: "List files. Scope with exactly one of deal_id, person_id, org_id or product_id (account-wide recent files otherwise). activity_id and lead_id filter within a scope. Each file carries mail_message_id when it arrived as an email attachment; pass a scope plus mail_message_id to list one message's attachments (inline images hidden unless include_inline).", inputSchema: zodToJsonSchema(FilesListSchema), handler: handleFilesList },
+  { name: "pipedrive_files_list", description: "List files. Scope with exactly one of deal_id, person_id, org_id or product_id (account-wide recent files otherwise). activity_id and lead_id filter within a scope. Each file carries mail_message_id when it arrived as an email attachment; pass mail_message_id alone to list one message's attachments (inline images hidden unless include_inline).", inputSchema: zodToJsonSchema(FilesListSchema), handler: handleFilesList },
   { name: "pipedrive_files_get", description: "Get file metadata and optional download URL.", inputSchema: zodToJsonSchema(FilesGetSchema), handler: handleFilesGet },
   { name: "pipedrive_files_upload", description: "Upload a base64-encoded file and attach to an entity.", inputSchema: zodToJsonSchema(FilesUploadSchema), handler: handleFilesUpload },
 ];
