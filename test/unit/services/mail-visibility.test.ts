@@ -24,4 +24,16 @@ describe("buildVisibilityMeta", () => {
     const meta = buildVisibilityMeta({ entity: "organization", reportedCount: null, start: 0, itemsReturned: 4, hasMore: false });
     expect(meta).toEqual({ reported_count: null, visible_count: 4 });
   });
+
+  it("leaves visible_count null on an empty page past the end of the collection", () => {
+    const meta = buildVisibilityMeta({ entity: "deal", reportedCount: 226, start: 200, itemsReturned: 0, hasMore: false });
+    expect(meta.visible_count).toBeNull();
+    expect(meta.note).toBeUndefined();
+  });
+
+  it("still reports zero visible on an empty first page", () => {
+    const meta = buildVisibilityMeta({ entity: "deal", reportedCount: 5, start: 0, itemsReturned: 0, hasMore: false });
+    expect(meta.visible_count).toBe(0);
+    expect(meta.note).toContain("0 of the 5");
+  });
 });
