@@ -198,7 +198,7 @@ export interface CompactMailMessage {
   has_attachments_flag: boolean;
   // Present on mailbox endpoints; null when the source object omits them.
   // Attachments themselves are files: list them with pipedrive_files_list
-  // (deal_id/person_id/org_id + mail_message_id).
+  // (mail_message_id).
   has_real_attachments_flag: boolean | null;
   has_inline_attachments_flag: boolean | null;
   draft_flag: boolean;

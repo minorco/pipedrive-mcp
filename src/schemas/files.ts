@@ -14,7 +14,7 @@ export const FilesListSchema = z.object({
   product_id: z.coerce.number().int().positive().optional().describe("Scope the listing to this product's files"),
   activity_id: z.coerce.number().int().positive().optional().describe("Within a deal/person/org/product scope, only files attached to this activity (Pipedrive has no per-activity files endpoint, so a scope is required)"),
   lead_id: z.string().optional().describe("Within a deal/person/org/product scope, only files attached to this lead (Pipedrive has no per-lead files endpoint, so a scope is required)"),
-  mail_message_id: IdSchema.optional().describe("Within a deal/person/org/product scope, only files that arrived as attachments on this mail message (Pipedrive cannot list files by message directly, so pass the deal_id/person_id/org_id the message is linked to)"),
+  mail_message_id: IdSchema.optional().describe("List the attachments of this mail message (stands alone; do not combine with a scope or other filters). Pipedrive stores email attachments unlinked to deals, so this searches the account's files by the message's sync time."),
   include_inline: z.boolean().optional().default(false).describe("With mail_message_id: also return inline attachments (embedded signature images etc.). Default false."),
   cursor: PageTokenSchema,
   limit: LimitSchema,
@@ -36,12 +36,12 @@ export const FilesListSchema = z.object({
         "Pipedrive has no per-activity or per-lead files endpoint. Supply deal_id, person_id, org_id or product_id as the scope; activity_id and lead_id are then applied as filters within it.",
     });
   }
-  if (scopes.length === 0 && value.mail_message_id !== undefined) {
+  if (value.mail_message_id !== undefined && (scopes.length > 0 || value.activity_id !== undefined || value.lead_id !== undefined || value.cursor !== undefined)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["mail_message_id"],
       message:
-        "Pipedrive cannot list files by mail message directly. Pass the deal_id (or person_id/org_id) the message is linked to alongside mail_message_id; the listing is then filtered to that message's attachments.",
+        "mail_message_id stands alone: Pipedrive stores email attachments unlinked to any deal, person or organization, so the lookup searches the whole account by message and cannot be combined with a scope, activity_id, lead_id or cursor.",
     });
   }
 });
