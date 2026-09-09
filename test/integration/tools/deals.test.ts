@@ -305,3 +305,13 @@ describe("pipedrive_deals_delete", () => {
     expect(result.isError).toBe(true);
   });
 });
+
+describe("pipedrive_deals_summary with a missing deal", () => {
+  it("returns a not_found error instead of crashing when the deal does not exist (PIPEDRIVE-MCP-K)", async () => {
+    nock(BASE_URL).get("/api/v2/deals/999999").query(true).reply(404, { success: false, error: "Deal not found" });
+    const { result } = await callTool("pipedrive_deals_summary", { deal_id: 999999 });
+    expect(result.isError).toBe(true);
+    expect(result.errorMeta).toEqual({ category: "not_found", status: 404 });
+    expect(String((result.content[0] as { text: string }).text)).toContain("GET /deals/999999");
+  });
+});

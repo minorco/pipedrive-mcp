@@ -7,7 +7,7 @@ import { normalizeApiError } from "../pipedrive/error-normalizer.js";
 import { buildPaginationParams, buildPaginatedResult } from "../pipedrive/pagination.js";
 import { resolveCustomFieldsByKey, resolveCustomFieldsByName, resolveCustomFieldsInResponse } from "../services/custom-fields.js";
 import { checkDealFieldRequirements, hasMissingFields, getDealFieldRequirements, computeMissingFields, FIELD_REQUIREMENTS_NOTE } from "../services/field-requirements.js";
-import { buildDealSummary } from "../services/summaries.js";
+import { buildDealSummary, isDealSummaryFailure } from "../services/summaries.js";
 import { compactDeal } from "../presenters/entities.js";
 import { formatDealSummary } from "../presenters/summaries.js";
 import {
@@ -170,6 +170,9 @@ async function handleDealsSummary(args: Record<string, unknown>): Promise<ToolRe
       includeNotes: input.include_notes,
       includeProducts: input.include_products,
     });
+    if (isDealSummaryFailure(summary)) {
+      return apiErrorResult(normalizeApiError(summary.error, "pipedrive_deals_summary", summary.endpoint));
+    }
     return successResult(formatDealSummary(summary));
   }
 
