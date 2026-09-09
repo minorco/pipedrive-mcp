@@ -23,7 +23,6 @@ type TaskWriteInput = {
   due_date?: string;
   start_date?: string;
   assignee_ids?: number[];
-  priority?: number;
 };
 
 // The live v2 tasks API reads and writes is_done/is_milestone/assignee_ids
@@ -37,7 +36,6 @@ function buildTaskBody(input: TaskWriteInput): Record<string, unknown> {
   if (input.due_date) body.due_date = input.due_date;
   if (input.start_date) body.start_date = input.start_date;
   if (input.assignee_ids) body.assignee_ids = input.assignee_ids;
-  if (input.priority !== undefined) body.priority = input.priority;
   return body;
 }
 
@@ -148,7 +146,7 @@ const tools: ToolDefinition[] = [
   { name: "pipedrive_project_tasks_list", description: `List project tasks with filters (project_id, assignee_id, is_done, is_milestone, parent_task_id) and pagination. ${TASK_NOTE}`, inputSchema: zodToJsonSchema(ProjectTasksListSchema), handler: handleProjectTasksList },
   { name: "pipedrive_project_tasks_get", description: `Get a single project task by ID. ${TASK_NOTE}`, inputSchema: zodToJsonSchema(ProjectTasksGetSchema), handler: handleProjectTasksGet },
   { name: "pipedrive_project_tasks_create", description: `Create a project task, optionally as a subtask via parent_task_id. ${TASK_NOTE}`, inputSchema: zodToJsonSchema(ProjectTasksCreateSchema), handler: handleProjectTasksCreate },
-  { name: "pipedrive_project_tasks_update", description: `Update a project task (title, is_done, is_milestone, dates, assignees, priority). ${TASK_NOTE}`, inputSchema: zodToJsonSchema(ProjectTasksUpdateSchema), handler: handleProjectTasksUpdate },
+  { name: "pipedrive_project_tasks_update", description: `Update a project task (title, is_done, is_milestone, dates, assignees). ${TASK_NOTE}`, inputSchema: zodToJsonSchema(ProjectTasksUpdateSchema), handler: handleProjectTasksUpdate },
   { name: "pipedrive_project_tasks_delete", description: `Delete a project task and its subtasks. Requires confirm: "DELETE". Supports dry_run. ${TASK_NOTE}`, inputSchema: zodToJsonSchema(ProjectTasksDeleteSchema), handler: handleProjectTasksDelete },
 ];
 

@@ -135,6 +135,27 @@ describe("pipedrive_activities_create", () => {
     expect(result.isError).toBeFalsy();
     expect(sentType).toBe("meeting");
   });
+
+  it("sends location as a v2 address object", async () => {
+    const fixture = fixturesV2("activities-create.json");
+    let sentLocation: unknown;
+    mockActivityTypes();
+    nock(BASE_URL)
+      .post("/api/v2/activities", (body: Record<string, unknown>) => {
+        sentLocation = body.location;
+        return true;
+      })
+      .query(true)
+      .reply(201, fixture);
+
+    const { result } = await callTool("pipedrive_activities_create", {
+      subject: "Site visit",
+      type: "meeting",
+      location: { value: "1 Main Rd, Wellington", locality: "Wellington" },
+    });
+    expect(result.isError).toBeFalsy();
+    expect(sentLocation).toEqual({ value: "1 Main Rd, Wellington", locality: "Wellington" });
+  });
 });
 
 describe("pipedrive_activities_mark_done", () => {

@@ -241,3 +241,49 @@ describe("pipedrive_files_get", () => {
     expect(data as Record<string, unknown>).not.toHaveProperty("download_url");
   });
 });
+
+describe("pipedrive_files_upload", () => {
+  it("posts multipart form data through the HTTP client and returns the compact file", async () => {
+    let contentType = "";
+    let bodyText = "";
+    nock(BASE_URL)
+      .post("/api/v1/files", (body) => {
+        bodyText = typeof body === "string" ? body : JSON.stringify(body);
+        return true;
+      })
+      .query((q) => q.api_token === "test-api-token-00000000000000000000")
+      .reply(function () {
+        contentType = String(this.req.headers["content-type"] ?? "");
+        return [201, { success: true, data: { id: 9500, name: "hello.txt", file_name: "hello.txt", file_type: "txt", file_size: 5, deal_id: 117, mail_message_id: null, inline_flag: false } }];
+      });
+
+    const { result, data } = await callTool("pipedrive_files_upload", {
+      file_name: "hello.txt",
+      content_base64: Buffer.from("hello").toString("base64"),
+      deal_id: 117,
+      mime_type: "text/plain",
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(contentType).toMatch(/^multipart\/form-data; boundary=/);
+    expect(bodyText).toContain('name="file"; filename="hello.txt"');
+    expect(bodyText).toContain('name="deal_id"');
+    expect(bodyText).toContain("hello");
+    const parsed = data as Record<string, unknown>;
+    expect((parsed.file as Record<string, unknown>).id).toBe(9500);
+    expect((parsed.file as Record<string, unknown>).deal_id).toBe(117);
+  });
+
+  it("rejects an upload with no entity id before any request", async () => {
+    const { result } = await callTool("pipedrive_files_upload", { file_name: "x.txt", content_base64: "aGk=" });
+    expect(result.isError).toBe(true);
+    expect(nock.pendingMocks()).toEqual([]);
+  });
+
+  it("surfaces a Pipedrive rejection with the normalised category", async () => {
+    nock(BASE_URL).post("/api/v1/files").query(true).reply(403, { success: false, error: "Scope and URL mismatch" });
+    const { result } = await callTool("pipedrive_files_upload", { file_name: "x.txt", content_base64: "aGk=", deal_id: 117 });
+    expect(result.isError).toBe(true);
+    expect(result.errorMeta).toEqual({ category: "forbidden", status: 403 });
+  });
+});

@@ -202,6 +202,32 @@ export const CustomFieldKeysSchema = z
   .optional()
   .describe("Custom field keys to include in the response");
 
+// Pipedrive v2 address-type fields (organization address, activity location) are
+// objects, not strings. Accept the object, and coerce a plain string into
+// { value } so agents can still pass "123 Queen St, Auckland" and get the
+// v2-correct shape (the API geocodes the components from `value`).
+export const AddressObjectSchema = z
+  .object({
+    value: z.string().optional().describe("Full address as one string"),
+    country: z.string().optional(),
+    admin_area_level_1: z.string().optional().describe("State / region"),
+    admin_area_level_2: z.string().optional().describe("County"),
+    locality: z.string().optional().describe("City"),
+    sublocality: z.string().optional().describe("Neighbourhood / suburb"),
+    route: z.string().optional().describe("Street"),
+    street_number: z.string().optional(),
+    subpremise: z.string().optional().describe("Apartment / suite"),
+    postal_code: z.string().optional(),
+  })
+  .strict();
+
+export type AddressObject = z.infer<typeof AddressObjectSchema>;
+
+export const AddressSchema = z
+  .union([z.string(), AddressObjectSchema])
+  .transform((v): AddressObject => (typeof v === "string" ? { value: v } : v))
+  .optional();
+
 export const VisibleToSchema = z
   .enum(["1", "3", "5", "7"])
   .transform(Number)

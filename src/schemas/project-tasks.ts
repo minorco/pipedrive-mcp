@@ -35,7 +35,9 @@ const taskWriteFields = {
   due_date: z.string().optional().describe("Due date (YYYY-MM-DD)"),
   start_date: z.string().optional().describe("Start date (YYYY-MM-DD)"),
   assignee_ids: z.array(z.coerce.number().int().positive()).optional().describe("Assignee user IDs"),
-  priority: z.coerce.number().int().optional().describe("Task priority"),
+  // `priority` is deliberately absent: the v2 tasks API rejects the integer the
+  // docs describe ("body/priority must be null, must be object") and does not
+  // document the object shape, so the field could never be set successfully.
 };
 
 export const ProjectTasksCreateSchema = z.object({
