@@ -74,7 +74,9 @@ async function handleLeadsCreate(args: Record<string, unknown>): Promise<ToolRes
   if (input.label_ids) body.label_ids = input.label_ids;
   if (input.value) body.value = input.value;
   if (input.expected_close_date) body.expected_close_date = input.expected_close_date;
-  if (input.visible_to) body.visible_to = input.visible_to;
+  // The v1 leads API takes visible_to as a string ("1" | "3" | "5" | "7"); the
+  // numeric form the v2 entities use is rejected with "body is invalid".
+  if (input.visible_to) body.visible_to = String(input.visible_to);
 
   const response = await rateLimiters.general.schedule(() =>
     withRetry(() => apiV1.post<Record<string, unknown>>("/leads", body), { label: "pipedrive_leads_create" }),
@@ -98,7 +100,9 @@ async function handleLeadsUpdate(args: Record<string, unknown>): Promise<ToolRes
   if (input.label_ids) body.label_ids = input.label_ids;
   if (input.value) body.value = input.value;
   if (input.expected_close_date) body.expected_close_date = input.expected_close_date;
-  if (input.visible_to) body.visible_to = input.visible_to;
+  // The v1 leads API takes visible_to as a string ("1" | "3" | "5" | "7"); the
+  // numeric form the v2 entities use is rejected with "body is invalid".
+  if (input.visible_to) body.visible_to = String(input.visible_to);
 
   const response = await rateLimiters.general.schedule(() =>
     withRetry(() =>

@@ -297,4 +297,15 @@ describe("Projects add-on 403 guidance", () => {
     const text = (result.content?.[0] as { text?: string })?.text ?? "";
     expect(text).toContain("Projects is a paid Pipedrive add-on");
   });
+
+  it("explains that archived projects are not reachable over OAuth on a 403 from /projects/archived", async () => {
+    nock(BASE_URL).get("/api/v2/projects/archived").query(true).reply(403, { success: false, error: "Scope and URL mismatch" });
+
+    const { result } = await callTool("pipedrive_projects_list", { archived_only: true });
+    expect(result.isError).toBe(true);
+    const text = (result.content?.[0] as { text?: string })?.text ?? "";
+    expect(text).toContain("archived-projects endpoint");
+    expect(text).not.toContain("paid Pipedrive add-on");
+    expect(result.errorMeta).toEqual({ category: "forbidden", status: 403 });
+  });
 });
