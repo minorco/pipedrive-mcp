@@ -1,9 +1,9 @@
 import { registerTools, type ToolDefinition } from "../mcp/register-tools.js";
-import { successResult, errorResult, paginatedResult, type ToolResult } from "../mcp/tool-result.js";
+import { successResult, paginatedResult, type ToolResult } from "../mcp/tool-result.js";
 import { apiErrorResult, validationErrorResult } from "../mcp/errors.js";
 import { getContext } from "../server.js";
 import { withRetry } from "../pipedrive/retries.js";
-import { normalizeApiError, categorizeStatus } from "../pipedrive/error-normalizer.js";
+import { normalizeApiError } from "../pipedrive/error-normalizer.js";
 import { compactFile } from "../presenters/entities.js";
 import { resolveFilesEndpoint, buildFilePredicate, listFiles, findMailMessageFiles } from "../services/files.js";
 import { FilesListSchema, FilesGetSchema, FilesUploadSchema } from "../schemas/files.js";
@@ -115,72 +115,37 @@ async function handleFilesUpload(args: Record<string, unknown>): Promise<ToolRes
     return validationErrorResult("pipedrive_files_upload", "content_base64 is not valid base64");
   }
 
-  const { config } = getContext();
-  const baseUrl = `https://${config.companyDomain}.pipedrive.com/api/v1`;
-
-  // Build multipart form data
-  const boundary = `----PipedriveMCP${Date.now()}`;
-  const fileBuffer = Buffer.from(stripped, "base64");
+  const bytes = Uint8Array.from(Buffer.from(stripped, "base64"));
   const mimeType = input.mime_type ?? "application/octet-stream";
 
-  const parts: string[] = [];
-
-  // File part
-  parts.push(`--${boundary}`);
-  parts.push(`Content-Disposition: form-data; name="file"; filename="${input.file_name}"`);
-  parts.push(`Content-Type: ${mimeType}`);
-  parts.push("");
-
-  // Entity ID parts
-  const entityFields: [string, string | number][] = [];
-  if (input.deal_id) entityFields.push(["deal_id", input.deal_id]);
-  if (input.person_id) entityFields.push(["person_id", input.person_id]);
-  if (input.org_id) entityFields.push(["org_id", input.org_id]);
-  if (input.product_id) entityFields.push(["product_id", input.product_id]);
-  if (input.activity_id) entityFields.push(["activity_id", input.activity_id]);
-  if (input.lead_id) entityFields.push(["lead_id", input.lead_id]);
-
-  const preamble = Buffer.from(parts.join("\r\n") + "\r\n");
-
-  const fieldParts: Buffer[] = [];
+  // Multipart body via FormData so the shared HTTP client supplies auth
+  // (Bearer for OAuth connections, api_token otherwise). The previous
+  // hand-rolled request appended api_token to the URL, which is undefined
+  // under OAuth and made every hosted upload fail with 403.
+  const form = new FormData();
+  form.append("file", new Blob([bytes], { type: mimeType }), input.file_name);
+  const entityFields: [string, string | number | undefined][] = [
+    ["deal_id", input.deal_id],
+    ["person_id", input.person_id],
+    ["org_id", input.org_id],
+    ["product_id", input.product_id],
+    ["activity_id", input.activity_id],
+    ["lead_id", input.lead_id],
+  ];
   for (const [name, value] of entityFields) {
-    fieldParts.push(Buffer.from(`\r\n--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}`));
-  }
-  const epilogue = Buffer.from(`\r\n--${boundary}--\r\n`);
-
-  const body = Buffer.concat([preamble, fileBuffer, ...fieldParts, epilogue]);
-
-  const url = `${baseUrl}/files?api_token=${config.apiToken}`;
-
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": `multipart/form-data; boundary=${boundary}` },
-      body,
-    });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return errorResult(`pipedrive_files_upload: network error - ${msg}. Retryable: yes.`);
+    if (value !== undefined) form.append(name, String(value));
   }
 
-  let data: Record<string, unknown>;
-  try {
-    data = await response.json() as Record<string, unknown>;
-  } catch {
-    return errorResult(`pipedrive_files_upload: ${response.status} - non-JSON response from Pipedrive. Retryable: ${response.status >= 500 ? "yes" : "no"}.`);
-  }
+  const { apiV1, rateLimiters } = getContext();
+  const response = await rateLimiters.general.schedule(() =>
+    withRetry(() => apiV1.postMultipart<Record<string, unknown>>("/files", form), { label: "pipedrive_files_upload" }),
+  );
 
-  if (!response.ok || !data.success) {
-    const status = response.status;
-    return apiErrorResult({
-      category: categorizeStatus(status), status, tool: "pipedrive_files_upload",
-      endpoint: "POST /files", pipedrive_error: (data.error as string) ?? "",
-      retryable: status === 429 || status >= 500, guidance: "File upload failed. Check the file data and entity IDs.",
-    });
+  if (response.status !== 200 && response.status !== 201) {
+    return apiErrorResult(normalizeApiError(response, "pipedrive_files_upload", "POST /files"));
   }
-
-  return successResult({ message: `File "${input.file_name}" uploaded`, file: data.data });
+  const file = response.data.data as Record<string, unknown> | null;
+  return successResult({ message: `File "${input.file_name}" uploaded`, file: file ? compactFile(file) : null });
 }
 
 const tools: ToolDefinition[] = [

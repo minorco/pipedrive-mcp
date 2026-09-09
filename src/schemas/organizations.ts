@@ -21,6 +21,7 @@ import {
   ReasonSchema,
   idsFilterSchema,
   SearchTermSchema,
+  AddressSchema,
 } from "./common.js";
 
 export const OrganizationsListSchema = z.object({
@@ -54,7 +55,7 @@ export const OrganizationsSearchSchema = z.object({
 export const OrganizationsCreateSchema = z.object({
   name: z.string().min(1).describe("Organization name"),
   owner_id: OwnerIdSchema,
-  address: z.string().optional().describe("Organization address"),
+  address: AddressSchema.describe("Organization address: a full address string, or an object with value/country/locality/route/street_number/postal_code"),
   visible_to: VisibleToSchema,
   custom_fields: CustomFieldsSchema,
   custom_fields_by_name: CustomFieldsByNameSchema,
@@ -64,7 +65,7 @@ export const OrganizationsUpdateSchema = z.object({
   org_id: IdSchema.describe("The organization ID to update"),
   name: z.string().optional(),
   owner_id: OwnerIdSchema,
-  address: z.string().optional(),
+  address: AddressSchema.describe("Organization address: a full address string, or an object with value/country/locality/route/street_number/postal_code"),
   visible_to: VisibleToSchema,
   custom_fields: CustomFieldsSchema,
   custom_fields_by_name: CustomFieldsByNameSchema,

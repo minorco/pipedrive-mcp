@@ -97,7 +97,22 @@ export function createApiV1(config: Config, client: HttpClient) {
     });
   }
 
-  return { get, list, post, put, patch, del };
+  // Multipart upload (files). Auth is handled by the client exactly like every
+  // other call: Bearer header for OAuth, api_token query param otherwise.
+  async function postMultipart<T = unknown>(
+    path: string,
+    form: FormData,
+    params?: Record<string, string | number | boolean | undefined>,
+  ): Promise<HttpResponse<V1SingleResponse<T>>> {
+    return client.request<V1SingleResponse<T>>({
+      method: "POST",
+      url: `${baseUrl}${path}`,
+      params,
+      rawBody: form,
+    });
+  }
+
+  return { get, list, post, put, patch, del, postMultipart };
 }
 
 export type ApiV1 = ReturnType<typeof createApiV1>;

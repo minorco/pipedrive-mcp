@@ -8,6 +8,7 @@ import {
   ConfirmDeleteSchema,
   DryRunSchema,
   ReasonSchema,
+  AddressSchema,
 } from "./common.js";
 
 export const ActivitiesListSchema = z.object({
@@ -40,7 +41,7 @@ export const ActivitiesCreateSchema = z.object({
   due_time: z.string().optional().describe("Due time (HH:MM)"),
   duration: z.string().optional().describe("Duration (HH:MM)"),
   note: z.string().optional().describe("Plain HTML markup for the activity note (e.g. <p>, <br>, <strong>, <em>, <ul><li>, <a href>). Pass the HTML directly. Do not wrap it in a CDATA section (<![CDATA[ ... ]]>); CDATA is XML syntax, not HTML."),
-  location: z.string().optional(),
+  location: AddressSchema.describe("Activity location: a full address string, or an object with value/country/locality/route/street_number/postal_code"),
   done: z.boolean().optional().default(false),
 }).strict();
 
@@ -57,7 +58,7 @@ export const ActivitiesUpdateSchema = z.object({
   due_time: z.string().optional(),
   duration: z.string().optional(),
   note: z.string().optional().describe("Updated plain HTML markup for the activity note (e.g. <p>, <br>, <strong>, <em>, <ul><li>, <a href>). Pass the HTML directly. Do not wrap it in a CDATA section (<![CDATA[ ... ]]>); CDATA is XML syntax, not HTML."),
-  location: z.string().optional(),
+  location: AddressSchema.describe("Activity location: a full address string, or an object with value/country/locality/route/street_number/postal_code"),
   done: z.boolean().optional(),
 }).strict();
 

@@ -87,6 +87,22 @@ describe("pipedrive_organizations_create", () => {
     expect(org.id).toBe(301);
     expect(org.name).toBe("Acme Corp");
   });
+
+  it("sends address as a v2 address object, coercing a plain string", async () => {
+    const fixture = fixturesV2("organizations-create.json");
+    let sentAddress: unknown;
+    nock(BASE_URL)
+      .post("/api/v2/organizations", (body: Record<string, unknown>) => {
+        sentAddress = body.address;
+        return true;
+      })
+      .query(true)
+      .reply(201, fixture);
+
+    const { result } = await callTool("pipedrive_organizations_create", { name: "Acme Corp", address: "123 Queen St, Auckland" });
+    expect(result.isError).toBeFalsy();
+    expect(sentAddress).toEqual({ value: "123 Queen St, Auckland" });
+  });
 });
 
 describe("pipedrive_organizations_delete", () => {
