@@ -1,5 +1,6 @@
 import { getContext } from "../server.js";
 import { withRetry } from "../pipedrive/retries.js";
+import { type HttpResponse } from "../pipedrive/http-client.js";
 
 export interface DealSummary {
   deal: Record<string, unknown>;
@@ -17,17 +18,31 @@ export interface DealSummaryOptions {
   includeProducts?: boolean;
 }
 
-export async function buildDealSummary(opts: DealSummaryOptions): Promise<DealSummary> {
+/** The deal fetch failed (404 for an unknown id, 403, 5xx); carries the raw response for error normalisation. */
+export interface DealSummaryFailure {
+  error: HttpResponse<unknown>;
+  endpoint: string;
+}
+
+export function isDealSummaryFailure(value: DealSummary | DealSummaryFailure): value is DealSummaryFailure {
+  return "error" in value;
+}
+
+export async function buildDealSummary(opts: DealSummaryOptions): Promise<DealSummary | DealSummaryFailure> {
   const { apiV2, apiV1, rateLimiters } = getContext();
 
-  // Fetch the deal
+  // Fetch the deal. A non-200 (typically 404 for an id the agent guessed) must
+  // surface as a normal API error, not a TypeError from reading the missing body
+  // (Sentry PIPEDRIVE-MCP-K).
   const dealResponse = await rateLimiters.general.schedule(() =>
     withRetry(() => apiV2.get<Record<string, unknown>>(`/deals/${opts.dealId}`), {
       label: `GET deal ${opts.dealId}`,
     }),
   );
-
-  const deal = dealResponse.data.data;
+  const deal = dealResponse.data?.data;
+  if (dealResponse.status !== 200 || !deal) {
+    return { error: dealResponse, endpoint: `GET /deals/${opts.dealId}` };
+  }
   const summary: DealSummary = { deal };
 
   // Parallel fetches for related data
