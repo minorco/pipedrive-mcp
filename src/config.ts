@@ -19,6 +19,13 @@ export const ConfigSchema = z
       .transform((v) => v.toLowerCase() !== "false")
       .default("true"),
     logLevel: z.enum(["debug", "info", "warn", "error"]).default("info"),
+    // Namespace for the module-level metadata caches (users, custom fields,
+    // activity types). Hosts that serve several Pipedrive accounts from one
+    // process (e.g. a Cloudflare Worker) must set this per account so one
+    // account's field keys or user list can never be served to another.
+    // Defaults to companyDomain, which is the right scope for a single-account
+    // stdio process.
+    cacheScope: z.string().min(1).optional(),
   })
   .refine(
     (cfg) => Boolean(cfg.apiToken) !== Boolean(cfg.oauthToken),

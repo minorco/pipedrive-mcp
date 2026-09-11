@@ -1,4 +1,4 @@
-import { TtlCache } from "./cache.js";
+import { TtlCache, accountCacheKey } from "./cache.js";
 import { getContext } from "../server.js";
 import { withRetry } from "../pipedrive/retries.js";
 import { log } from "../logging.js";
@@ -69,7 +69,8 @@ function parseRule(raw: unknown): FieldRequirementRule {
  */
 export async function getDealFieldRequirements(): Promise<DealFieldRequirement[] | null> {
   const cache = getCache();
-  const cached = cache.get(CACHE_KEY);
+  const cacheKey = accountCacheKey(CACHE_KEY);
+  const cached = cache.get(cacheKey);
   if (cached) return cached;
 
   const { apiV2, rateLimiters } = getContext();
@@ -116,7 +117,7 @@ export async function getDealFieldRequirements(): Promise<DealFieldRequirement[]
     return null;
   }
 
-  cache.set(CACHE_KEY, fields);
+  cache.set(cacheKey, fields);
   return fields;
 }
 
