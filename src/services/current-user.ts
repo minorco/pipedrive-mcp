@@ -1,4 +1,4 @@
-import { TtlCache } from "./cache.js";
+import { TtlCache, accountCacheKey, userCacheKey } from "./cache.js";
 import { getContext } from "../server.js";
 import { withRetry } from "../pipedrive/retries.js";
 import { log } from "../logging.js";
@@ -15,7 +15,8 @@ const meCache = new TtlCache<PipedriveUser>(300000); // 5 min
 const usersCache = new TtlCache<PipedriveUser[]>(300000);
 
 export async function getCurrentUser(): Promise<PipedriveUser> {
-  const cached = meCache.get("me");
+  const meKey = userCacheKey("me");
+  const cached = meCache.get(meKey);
   if (cached) return cached;
 
   const { apiV1, rateLimiters } = getContext();
@@ -37,13 +38,14 @@ export async function getCurrentUser(): Promise<PipedriveUser> {
     active_flag: (data.active_flag as boolean) ?? true,
   };
 
-  meCache.set("me", user);
+  meCache.set(meKey, user);
   log.debug(`Current user resolved: ${user.name} (${user.id})`);
   return user;
 }
 
 async function getAllUsers(): Promise<PipedriveUser[]> {
-  const cached = usersCache.get("all");
+  const allKey = accountCacheKey("all");
+  const cached = usersCache.get(allKey);
   if (cached) return cached;
 
   const { apiV1, rateLimiters } = getContext();
@@ -64,7 +66,7 @@ async function getAllUsers(): Promise<PipedriveUser[]> {
     active_flag: (u.active_flag as boolean) ?? true,
   }));
 
-  usersCache.set("all", users);
+  usersCache.set(allKey, users);
   return users;
 }
 

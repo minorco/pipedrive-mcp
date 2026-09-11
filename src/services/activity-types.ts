@@ -1,4 +1,4 @@
-import { TtlCache } from "./cache.js";
+import { TtlCache, accountCacheKey } from "./cache.js";
 import { getContext } from "../server.js";
 import { withRetry } from "../pipedrive/retries.js";
 import { log } from "../logging.js";
@@ -22,9 +22,10 @@ function getCache(): TtlCache<ActivityType[]> {
 
 export async function getActivityTypes(refreshCache = false): Promise<ActivityType[]> {
   const cache = getCache();
+  const cacheKey = accountCacheKey(CACHE_KEY);
 
   if (!refreshCache) {
-    const cached = cache.get(CACHE_KEY);
+    const cached = cache.get(cacheKey);
     if (cached) return cached;
   }
 
@@ -45,7 +46,7 @@ export async function getActivityTypes(refreshCache = false): Promise<ActivityTy
     .filter((t) => t.active_flag !== false && typeof t.key_string === "string")
     .map((t) => ({ name: String(t.name ?? ""), keyString: String(t.key_string) }));
 
-  cache.set(CACHE_KEY, types);
+  cache.set(cacheKey, types);
   log.debug(`Cached ${types.length} activity types`);
   return types;
 }

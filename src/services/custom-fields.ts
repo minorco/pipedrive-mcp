@@ -1,4 +1,4 @@
-import { TtlCache } from "./cache.js";
+import { TtlCache, accountCacheKey } from "./cache.js";
 import { getContext } from "../server.js";
 import { withRetry } from "../pipedrive/retries.js";
 import { log } from "../logging.js";
@@ -85,9 +85,10 @@ export async function getFieldsForEntity(
   refreshCache = false,
 ): Promise<FieldMetadata[]> {
   const cache = getCache();
+  const cacheKey = accountCacheKey(entityType);
 
   if (!refreshCache) {
-    const cached = cache.get(entityType);
+    const cached = cache.get(cacheKey);
     if (cached) return cached;
   }
 
@@ -138,7 +139,7 @@ export async function getFieldsForEntity(
     }
   }
 
-  cache.set(entityType, allFields);
+  cache.set(cacheKey, allFields);
   log.debug(`Cached ${allFields.length} fields for ${entityType}`);
   return allFields;
 }
