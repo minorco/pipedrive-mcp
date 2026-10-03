@@ -13,6 +13,7 @@ import {
   CustomFieldKeysSchema,
   CustomFieldsSchema,
   CustomFieldsByNameSchema,
+  LabelIdsSchema,
   FieldModeSchema,
   VisibleToSchema,
   ConfirmDeleteSchema,
@@ -57,6 +58,7 @@ export const OrganizationsCreateSchema = z.object({
   owner_id: OwnerIdSchema,
   address: AddressSchema.describe("Organization address: a full address string, or an object with value/country/locality/route/street_number/postal_code"),
   visible_to: VisibleToSchema,
+  label_ids: LabelIdsSchema,
   custom_fields: CustomFieldsSchema,
   custom_fields_by_name: CustomFieldsByNameSchema,
 }).strict();
@@ -67,6 +69,7 @@ export const OrganizationsUpdateSchema = z.object({
   owner_id: OwnerIdSchema,
   address: AddressSchema.describe("Organization address: a full address string, or an object with value/country/locality/route/street_number/postal_code"),
   visible_to: VisibleToSchema,
+  label_ids: LabelIdsSchema,
   custom_fields: CustomFieldsSchema,
   custom_fields_by_name: CustomFieldsByNameSchema,
 }).strict();

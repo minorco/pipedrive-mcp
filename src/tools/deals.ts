@@ -5,7 +5,7 @@ import { getContext } from "../server.js";
 import { withRetry } from "../pipedrive/retries.js";
 import { normalizeApiError } from "../pipedrive/error-normalizer.js";
 import { buildPaginationParams, buildPaginatedResult } from "../pipedrive/pagination.js";
-import { resolveCustomFieldsByKey, resolveCustomFieldsByName, resolveCustomFieldsInResponse } from "../services/custom-fields.js";
+import { buildFieldsPayload, resolveCustomFieldsInResponse } from "../services/custom-fields.js";
 import { checkDealFieldRequirements, hasMissingFields, getDealFieldRequirements, computeMissingFields, FIELD_REQUIREMENTS_NOTE } from "../services/field-requirements.js";
 import { buildDealSummary, isDealSummaryFailure } from "../services/summaries.js";
 import { compactDeal } from "../presenters/entities.js";
@@ -257,7 +257,6 @@ async function handleDealsCreate(args: Record<string, unknown>): Promise<ToolRes
 
   const body: Record<string, unknown> = { title: input.title };
   if (input.owner_id) body.owner_id = input.owner_id;
-  if (input.label_ids) body.label_ids = input.label_ids;
   if (input.person_id) body.person_id = input.person_id;
   if (input.org_id) body.org_id = input.org_id;
   if (input.value !== undefined) body.value = input.value;
@@ -268,25 +267,10 @@ async function handleDealsCreate(args: Record<string, unknown>): Promise<ToolRes
   if (input.expected_close_date) body.expected_close_date = input.expected_close_date;
   if (input.visible_to) body.visible_to = input.visible_to;
 
-  // v2 API expects custom fields in a nested `custom_fields` object
-  const customFieldsObj: Record<string, unknown> = {};
-  if (input.custom_fields) {
-    const { resolved, errors } = await resolveCustomFieldsByKey("deal", input.custom_fields);
-    if (errors.length > 0) {
-      return validationErrorResult("pipedrive_deals_create", errors.join("; "));
-    }
-    Object.assign(customFieldsObj, resolved);
-  }
-  if (input.custom_fields_by_name) {
-    const { resolved, errors } = await resolveCustomFieldsByName("deal", input.custom_fields_by_name);
-    if (errors.length > 0) {
-      return validationErrorResult("pipedrive_deals_create", errors.join("; "));
-    }
-    Object.assign(customFieldsObj, resolved);
-  }
-  if (Object.keys(customFieldsObj).length > 0) {
-    body.custom_fields = customFieldsObj;
-  }
+  // v2 nests custom fields in `custom_fields`; labels go top-level as `label_ids`
+  const { payload, errors } = await buildFieldsPayload("deal", input);
+  if (errors.length > 0) return validationErrorResult("pipedrive_deals_create", errors.join("; "));
+  Object.assign(body, payload);
 
   const response = await rateLimiters.general.schedule(() =>
     withRetry(() => apiV2.post<Record<string, unknown>>("/deals", body), {
@@ -324,7 +308,6 @@ async function handleDealsUpdate(args: Record<string, unknown>): Promise<ToolRes
   const body: Record<string, unknown> = {};
   if (input.title) body.title = input.title;
   if (input.owner_id) body.owner_id = input.owner_id;
-  if (input.label_ids) body.label_ids = input.label_ids;
   if (input.person_id) body.person_id = input.person_id;
   if (input.org_id) body.org_id = input.org_id;
   if (input.value !== undefined) body.value = input.value;
@@ -335,24 +318,10 @@ async function handleDealsUpdate(args: Record<string, unknown>): Promise<ToolRes
   if (input.expected_close_date) body.expected_close_date = input.expected_close_date;
   if (input.visible_to) body.visible_to = input.visible_to;
 
-  const customFieldsObj: Record<string, unknown> = {};
-  if (input.custom_fields) {
-    const { resolved, errors } = await resolveCustomFieldsByKey("deal", input.custom_fields);
-    if (errors.length > 0) {
-      return validationErrorResult("pipedrive_deals_update", errors.join("; "));
-    }
-    Object.assign(customFieldsObj, resolved);
-  }
-  if (input.custom_fields_by_name) {
-    const { resolved, errors } = await resolveCustomFieldsByName("deal", input.custom_fields_by_name);
-    if (errors.length > 0) {
-      return validationErrorResult("pipedrive_deals_update", errors.join("; "));
-    }
-    Object.assign(customFieldsObj, resolved);
-  }
-  if (Object.keys(customFieldsObj).length > 0) {
-    body.custom_fields = customFieldsObj;
-  }
+  // v2 nests custom fields in `custom_fields`; labels go top-level as `label_ids`
+  const { payload, errors } = await buildFieldsPayload("deal", input);
+  if (errors.length > 0) return validationErrorResult("pipedrive_deals_update", errors.join("; "));
+  Object.assign(body, payload);
 
   const response = await rateLimiters.general.schedule(() =>
     withRetry(() => apiV2.patch<Record<string, unknown>>(`/deals/${input.deal_id}`, body), {
@@ -445,14 +414,14 @@ const tools: ToolDefinition[] = [
   {
     name: "pipedrive_deals_create",
     description:
-      "Create a new deal. Supports custom fields by name or key. The response flags any fields Pipedrive marks required or important at the deal's stage - populate them (dropdowns from the returned options; ask the user for text fields) rather than leaving them empty.",
+      "Create a new deal. Supports custom fields by name or key, and the native Label field via label_ids (IDs or label names). The response flags any fields Pipedrive marks required or important at the deal's stage - populate them (dropdowns from the returned options; ask the user for text fields) rather than leaving them empty.",
     inputSchema: zodToJsonSchema(DealsCreateSchema),
     handler: handleDealsCreate,
   },
   {
     name: "pipedrive_deals_update",
     description:
-      "Update an existing deal. Supports custom fields by name or key. When changing stage or status (won/lost), the response flags fields Pipedrive marks required or important for that stage/status - populate them rather than leaving them empty.",
+      "Update an existing deal. Supports custom fields by name or key, and the native Label field via label_ids (IDs or label names). When changing stage or status (won/lost), the response flags fields Pipedrive marks required or important for that stage/status - populate them rather than leaving them empty.",
     inputSchema: zodToJsonSchema(DealsUpdateSchema),
     handler: handleDealsUpdate,
   },
