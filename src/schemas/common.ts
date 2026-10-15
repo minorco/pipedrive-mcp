@@ -94,6 +94,17 @@ export const CustomFieldsByNameSchema = z
   .optional()
   .describe("Custom fields by human-readable name (e.g. { 'Tier': 'Enterprise' })");
 
+export const LabelIdsSchema = z
+  .union([
+    z.array(z.union([z.number().int(), z.string()])),
+    z.number().int(),
+    z.string(),
+  ])
+  .optional()
+  .describe(
+    "Native Label field. Label option IDs or label names (e.g. [367] or ['Test / Internal']). Replaces existing labels; pass [] to clear. Sent as top-level label_ids, not a custom field.",
+  );
+
 export const FieldModeSchema = z
   .enum(["overwrite", "append"])
   .optional()
@@ -126,11 +137,13 @@ export const DealsIncludeFieldsSchema = z
       "source_lead_id",
     ]),
   )
-  .optional();
+  .optional()
+  .describe("Additional fields to include in the response");
 
 export const DealsSearchIncludeFieldsSchema = z
   .array(z.enum(["deal.cc_email"]))
-  .optional();
+  .optional()
+  .describe("Additional fields to include in the search results");
 
 export const OrganizationsIncludeFieldsSchema = z
   .array(
@@ -156,7 +169,8 @@ export const OrganizationsIncludeFieldsSchema = z
       "smart_bcc_email",
     ]),
   )
-  .optional();
+  .optional()
+  .describe("Additional fields to include in the response");
 
 export const PersonsIncludeFieldsSchema = z
   .array(
@@ -187,15 +201,18 @@ export const PersonsIncludeFieldsSchema = z
       "smart_bcc_email",
     ]),
   )
-  .optional();
+  .optional()
+  .describe("Additional fields to include in the response. marketing_status and doi_status can only be included if the company has the marketing app enabled");
 
 export const PersonsSearchIncludeFieldsSchema = z
   .array(z.enum(["person.picture"]))
-  .optional();
+  .optional()
+  .describe("Additional fields to include in the search results");
 
 export const LeadsSearchIncludeFieldsSchema = z
   .array(z.enum(["lead.was_seen"]))
-  .optional();
+  .optional()
+  .describe("Additional fields to include in the search results");
 
 export const CustomFieldKeysSchema = z
   .array(z.string())

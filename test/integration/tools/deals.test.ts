@@ -3,6 +3,7 @@ import nock from "nock";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { setupTestContext, callTool, BASE_URL, TEST_API_TOKEN } from "../../helpers/setup.js";
+import { clearFieldCache } from "../../../src/services/custom-fields.js";
 
 const fixturesV2 = (name: string) =>
   JSON.parse(readFileSync(join(__dirname, "../../fixtures/v2", name), "utf-8"));
@@ -14,6 +15,19 @@ beforeAll(async () => {
 afterEach(() => {
   nock.cleanAll();
 });
+
+// label_ids are validated against the Label field's options, so label tests
+// need metadata that actually lists the ids they send
+function mockLabelOptions(ids: number[]) {
+  clearFieldCache();
+  nock(BASE_URL)
+    .get("/api/v1/dealFields")
+    .query(true)
+    .reply(200, {
+      success: true,
+      data: [{ key: "label", name: "Label", field_type: "set", options: ids.map((id) => ({ id, label: `Label ${id}` })) }],
+    });
+}
 
 describe("pipedrive_deals_list", () => {
   it("returns paginated deal list", async () => {
@@ -160,6 +174,7 @@ describe("pipedrive_deals_create", () => {
 
   it("passes label_ids through to the API", async () => {
     const fixture = fixturesV2("deals-create.json");
+    mockLabelOptions([39, 208]);
 
     let sentLabelIds: unknown;
     nock(BASE_URL)
@@ -245,6 +260,7 @@ describe("pipedrive_deals_update", () => {
 
   it("passes label_ids through to the API", async () => {
     const fixture = fixturesV2("deals-update.json");
+    mockLabelOptions([39, 208]);
 
     let sentLabelIds: unknown;
     nock(BASE_URL)

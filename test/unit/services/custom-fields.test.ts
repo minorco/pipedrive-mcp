@@ -89,24 +89,74 @@ describe("resolveOptionValue", () => {
       { id: 202, label: "Prospect" },
     ]);
 
+    // v2 rejects anything but a JSON array of integer ids for set fields
     it("resolves an array of labels to an array of IDs", () => {
       expect(resolveOptionValue(setField, ["Advisor", "Client"])).toEqual([200, 201]);
     });
 
-    it("resolves an array of numeric IDs to an array of IDs", () => {
+    it("resolves an array of numeric IDs", () => {
       expect(resolveOptionValue(setField, [200, 202])).toEqual([200, 202]);
     });
 
-    it("converts a comma-separated ID string into an array of IDs", () => {
-      expect(resolveOptionValue(setField, "200,201")).toEqual([200, 201]);
+    it("wraps a single numeric ID in an array", () => {
+      expect(resolveOptionValue(setField, 201)).toEqual([201]);
     });
 
-    it("converts comma-separated labels into an array of IDs", () => {
+    it("wraps a single numeric string in an array", () => {
+      expect(resolveOptionValue(setField, "201")).toEqual([201]);
+    });
+
+    it("wraps a single label in an array", () => {
+      expect(resolveOptionValue(setField, "prospect")).toEqual([202]);
+    });
+
+    it("resolves a comma-separated ID string to an array", () => {
+      expect(resolveOptionValue(setField, "200, 201")).toEqual([200, 201]);
+    });
+
+    it("resolves comma-separated labels to an array", () => {
       expect(resolveOptionValue(setField, "Advisor,Client")).toEqual([200, 201]);
+    });
+
+    it("resolves numeric strings inside an array", () => {
+      expect(resolveOptionValue(setField, ["200", "Client"])).toEqual([200, 201]);
+    });
+
+    it("de-duplicates repeated options", () => {
+      expect(resolveOptionValue(setField, [200, "Advisor"])).toEqual([200]);
+    });
+
+    it("returns an empty array for an empty array (clears the field)", () => {
+      expect(resolveOptionValue(setField, [])).toEqual([]);
+    });
+
+    it("matches a label that contains a comma before splitting", () => {
+      const f = optionField("set", [
+        { id: 1, label: "Smith, Jones" },
+        { id: 2, label: "Smith" },
+      ]);
+      expect(resolveOptionValue(f, "Smith, Jones")).toEqual([1]);
+    });
+
+    it("resolves real Regulator(s) Confirmed inputs to [271]", () => {
+      const f = optionField("set", [
+        { id: 271, label: "[US] FINRA - Financial Industry Regulatory Authority" },
+        { id: 272, label: "[US] SEC - Securities and Exchange Commission" },
+      ]);
+      expect(resolveOptionValue(f, [271])).toEqual([271]);
+      expect(resolveOptionValue(f, "271")).toEqual([271]);
+      expect(resolveOptionValue(f, ["[US] FINRA - Financial Industry Regulatory Authority"])).toEqual([271]);
     });
 
     it("returns null if any element in comma-separated string is invalid", () => {
       expect(resolveOptionValue(setField, "200,999")).toBeNull();
+    });
+
+    it("rejects empty comma segments instead of clearing the field", () => {
+      expect(resolveOptionValue(setField, ",")).toBeNull();
+      expect(resolveOptionValue(setField, "200,")).toBeNull();
+      expect(resolveOptionValue(setField, "200,,201")).toBeNull();
+      expect(resolveOptionValue(setField, "")).toBeNull();
     });
 
     it("returns null if any element in array is invalid", () => {
