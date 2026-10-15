@@ -21,6 +21,11 @@ const policies: Record<string, EndpointPolicy> = {
   "deals.delete": { version: "v2", method: "DELETE", path: "/deals/:id", pagination: "none" },
   "deals.search": { version: "v2", method: "GET", path: "/deals/search", pagination: "cursor", isSearch: true },
 
+  // Deal participants (v1 only - no v2 equivalent as of 2026-10)
+  "dealParticipants.list": { version: "v1", method: "GET", path: "/deals/:id/participants", pagination: "offset" },
+  "dealParticipants.add": { version: "v1", method: "POST", path: "/deals/:id/participants", pagination: "none" },
+  "dealParticipants.delete": { version: "v1", method: "DELETE", path: "/deals/:dealId/participants/:id", pagination: "none" },
+
   // Persons (v2)
   "persons.list": { version: "v2", method: "GET", path: "/persons", pagination: "cursor" },
   "persons.get": { version: "v2", method: "GET", path: "/persons/:id", pagination: "none" },

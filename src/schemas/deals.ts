@@ -73,6 +73,13 @@ export const DealsSummarySchema = z.object({
   include_recent_activities: z.boolean().optional().default(false),
   include_notes: z.boolean().optional().default(false),
   include_products: z.boolean().optional().default(false),
+  include_emails: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe(
+      "Add the deal's email count plus subject, sender, date and a short snippet for the 3 most recent emails visible to the authenticated user. Costs one extra Pipedrive call and needs the mail read scope.",
+    ),
 }).strict();
 
 export const DealsMoveStageSchema = z.object({
@@ -119,6 +126,27 @@ export const DealsUpdateSchema = z.object({
 
 export const DealsDeleteSchema = z.object({
   deal_id: IdSchema.describe("The deal ID to delete"),
+  confirm: ConfirmDeleteSchema,
+  dry_run: DryRunSchema,
+  reason: ReasonSchema,
+}).strict();
+
+export const DealParticipantsListSchema = z.object({
+  deal_id: IdSchema.describe("The deal ID"),
+  cursor: PageTokenSchema,
+  limit: LimitSchema,
+}).strict();
+
+export const DealParticipantsAddSchema = z.object({
+  deal_id: IdSchema.describe("The deal ID"),
+  person_id: IdSchema.describe("The person ID to add as a participant (find it with pipedrive_persons_search)"),
+}).strict();
+
+export const DealParticipantsDeleteSchema = z.object({
+  deal_id: IdSchema.describe("The deal ID"),
+  deal_participant_id: IdSchema.describe(
+    "The deal-participant link ID (the `id` from pipedrive_deal_participants_list), not the person ID",
+  ),
   confirm: ConfirmDeleteSchema,
   dry_run: DryRunSchema,
   reason: ReasonSchema,

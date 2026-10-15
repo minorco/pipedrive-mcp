@@ -8,7 +8,7 @@ import { buildPaginationParams, buildPaginatedResult } from "../pipedrive/pagina
 import { buildFieldsPayload, resolveCustomFieldsInResponse } from "../services/custom-fields.js";
 import { checkDealFieldRequirements, hasMissingFields, getDealFieldRequirements, computeMissingFields, FIELD_REQUIREMENTS_NOTE } from "../services/field-requirements.js";
 import { buildDealSummary, isDealSummaryFailure } from "../services/summaries.js";
-import { compactDeal } from "../presenters/entities.js";
+import { compactDeal, compactDealParticipant } from "../presenters/entities.js";
 import { formatDealSummary } from "../presenters/summaries.js";
 import {
   DealsListSchema,
@@ -19,6 +19,9 @@ import {
   DealsCreateSchema,
   DealsUpdateSchema,
   DealsDeleteSchema,
+  DealParticipantsListSchema,
+  DealParticipantsAddSchema,
+  DealParticipantsDeleteSchema,
 } from "../schemas/deals.js";
 import { zodToJsonSchema } from "../schemas/zod-to-json.js";
 import { guardErrorResult } from "../mcp/errors.js";
@@ -169,6 +172,7 @@ async function handleDealsSummary(args: Record<string, unknown>): Promise<ToolRe
       includeRecentActivities: input.include_recent_activities,
       includeNotes: input.include_notes,
       includeProducts: input.include_products,
+      includeEmails: input.include_emails,
     });
     if (isDealSummaryFailure(summary)) {
       return apiErrorResult(normalizeApiError(summary.error, "pipedrive_deals_summary", summary.endpoint));
@@ -379,6 +383,105 @@ async function handleDealsDelete(args: Record<string, unknown>): Promise<ToolRes
   return successResult({ message: `Deal ${input.deal_id} deleted` });
 }
 
+// Participants are v1-only (GET/POST /deals/{id}/participants,
+// DELETE /deals/{id}/participants/{deal_participant_id}).
+async function handleDealParticipantsList(args: Record<string, unknown>): Promise<ToolResult> {
+  const parsed = DealParticipantsListSchema.safeParse(args);
+  if (!parsed.success) {
+    return validationErrorResult("pipedrive_deal_participants_list", parsed.error.message);
+  }
+
+  const { apiV1, rateLimiters, config } = getContext();
+  const input = parsed.data;
+  const limit = Math.min(input.limit ?? config.defaultLimit, config.maxLimit);
+  const paginationParams = buildPaginationParams("offset", limit, input.cursor);
+
+  const response = await rateLimiters.general.schedule(() =>
+    withRetry(() => apiV1.list<Record<string, unknown>>(`/deals/${input.deal_id}/participants`, { ...paginationParams }), {
+      label: `pipedrive_deal_participants_list ${input.deal_id}`,
+    }),
+  );
+
+  if (response.status !== 200) {
+    return apiErrorResult(normalizeApiError(response, "pipedrive_deal_participants_list", `GET /deals/${input.deal_id}/participants`));
+  }
+
+  const items = response.data.data ?? [];
+  const result = buildPaginatedResult(items, "offset", response.data as unknown as Record<string, unknown>);
+
+  return paginatedResult({
+    items: result.items.map(compactDealParticipant),
+    next_page_token: result.next_page_token,
+    approx_count: result.approx_count,
+    truncated: result.truncated,
+    pagination_mode: result.pagination_mode,
+  });
+}
+
+async function handleDealParticipantsAdd(args: Record<string, unknown>): Promise<ToolResult> {
+  const parsed = DealParticipantsAddSchema.safeParse(args);
+  if (!parsed.success) {
+    return validationErrorResult("pipedrive_deal_participants_add", parsed.error.message);
+  }
+
+  const { apiV1, rateLimiters } = getContext();
+  const input = parsed.data;
+
+  const response = await rateLimiters.general.schedule(() =>
+    withRetry(() => apiV1.post<Record<string, unknown>>(`/deals/${input.deal_id}/participants`, { person_id: input.person_id }), {
+      label: `pipedrive_deal_participants_add ${input.deal_id}`,
+    }),
+  );
+
+  if (response.status !== 200 && response.status !== 201) {
+    return apiErrorResult(normalizeApiError(response, "pipedrive_deal_participants_add", `POST /deals/${input.deal_id}/participants`));
+  }
+
+  return successResult({
+    message: `Person ${input.person_id} added as a participant on deal ${input.deal_id}`,
+    participant: response.data.data ? compactDealParticipant(response.data.data) : null,
+  });
+}
+
+async function handleDealParticipantsDelete(args: Record<string, unknown>): Promise<ToolResult> {
+  const parsed = DealParticipantsDeleteSchema.safeParse(args);
+  if (!parsed.success) {
+    return validationErrorResult("pipedrive_deal_participants_delete", parsed.error.message);
+  }
+
+  const input = parsed.data;
+  const target = { deal_id: input.deal_id, deal_participant_id: input.deal_participant_id };
+
+  if (input.dry_run) {
+    return successResult(
+      buildDryRunResult(
+        "pipedrive_deal_participants_delete",
+        "delete",
+        target,
+        `Would remove participant ${input.deal_participant_id} from deal ${input.deal_id} (the person record is kept)`,
+      ),
+    );
+  }
+
+  const confirmError = validateConfirmation(input.confirm, "DELETE", "pipedrive_deal_participants_delete", "remove participant from deal");
+  if (confirmError) return guardErrorResult(confirmError);
+
+  const { apiV1, rateLimiters } = getContext();
+  const path = `/deals/${input.deal_id}/participants/${input.deal_participant_id}`;
+
+  const response = await rateLimiters.general.schedule(() =>
+    withRetry(() => apiV1.del(path), {
+      label: `pipedrive_deal_participants_delete ${input.deal_participant_id}`,
+    }),
+  );
+
+  if (response.status !== 200) {
+    return apiErrorResult(normalizeApiError(response, "pipedrive_deal_participants_delete", `DELETE ${path}`));
+  }
+
+  return successResult({ message: `Participant ${input.deal_participant_id} removed from deal ${input.deal_id}` });
+}
+
 const tools: ToolDefinition[] = [
   {
     name: "pipedrive_deals_list",
@@ -400,7 +503,8 @@ const tools: ToolDefinition[] = [
   },
   {
     name: "pipedrive_deals_summary",
-    description: "Get a Claude-friendly deal or pipeline snapshot. Pass deal_id for a single deal summary with optional activities/notes/products. Omit deal_id for a pipeline overview with stage counts.",
+    description:
+      "Get a Claude-friendly deal or pipeline snapshot. Pass deal_id for a single deal summary with optional activities/notes/products/emails (include_emails adds the email count and the 3 most recent visible emails: subject, sender, date, snippet). Omit deal_id for a pipeline overview with stage counts.",
     inputSchema: zodToJsonSchema(DealsSummarySchema),
     handler: handleDealsSummary,
   },
@@ -430,6 +534,27 @@ const tools: ToolDefinition[] = [
     description: 'Delete a deal. Requires confirm: "DELETE". Supports dry_run for preview.',
     inputSchema: zodToJsonSchema(DealsDeleteSchema),
     handler: handleDealsDelete,
+  },
+  {
+    name: "pipedrive_deal_participants_list",
+    description:
+      "List the people participating in a deal (Pipedrive's Participants section, including the primary contact). Each item's id is the deal-participant link id used by pipedrive_deal_participants_delete; person_id is the person.",
+    inputSchema: zodToJsonSchema(DealParticipantsListSchema),
+    handler: handleDealParticipantsList,
+  },
+  {
+    name: "pipedrive_deal_participants_add",
+    description:
+      "Add an existing person to a deal as a participant. Find the person_id with pipedrive_persons_search; create the person first if they do not exist.",
+    inputSchema: zodToJsonSchema(DealParticipantsAddSchema),
+    handler: handleDealParticipantsAdd,
+  },
+  {
+    name: "pipedrive_deal_participants_delete",
+    description:
+      'Remove a participant from a deal (the person record is kept). Takes the deal_participant_id from pipedrive_deal_participants_list. Requires confirm: "DELETE". Supports dry_run for preview.',
+    inputSchema: zodToJsonSchema(DealParticipantsDeleteSchema),
+    handler: handleDealParticipantsDelete,
   },
 ];
 

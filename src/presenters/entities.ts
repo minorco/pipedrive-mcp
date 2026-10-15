@@ -159,6 +159,48 @@ export function compactActivity(raw: Record<string, unknown>): CompactActivity {
   };
 }
 
+export interface CompactDealParticipant {
+  id: number;
+  person_id: number | null;
+  name: string;
+  emails: string[];
+  phones: string[];
+  org_id: number | null;
+  add_time: string | null;
+  added_by_user_id: number | null;
+}
+
+// v1 reference fields arrive either as a bare id or as an expanded object
+// ({ value: <id>, name, ... } for persons, { id, name, ... } for users).
+function refId(value: unknown): number | null {
+  if (typeof value === "number") return value;
+  if (value && typeof value === "object") {
+    const ref = value as Record<string, unknown>;
+    const id = ref.value ?? ref.id;
+    return typeof id === "number" ? id : null;
+  }
+  return null;
+}
+
+// v1 GET/POST /deals/{id}/participants item. `id` is the deal-participant link
+// id (what DELETE takes), not the person id. Person details come from the
+// expanded `person` object when present, else the expanded `person_id` ref.
+export function compactDealParticipant(raw: Record<string, unknown>): CompactDealParticipant {
+  const person = (raw.person && typeof raw.person === "object" ? raw.person : null) as Record<string, unknown> | null;
+  const personRef = (raw.person_id && typeof raw.person_id === "object" ? raw.person_id : null) as Record<string, unknown> | null;
+  const source = person ?? personRef ?? {};
+  return {
+    id: raw.id as number,
+    person_id: refId(raw.person_id) ?? (typeof person?.id === "number" ? person.id : null),
+    name: (source.name as string) ?? "",
+    emails: extractEmails(source.emails ?? source.email),
+    phones: extractPhones(source.phones ?? source.phone),
+    org_id: refId(source.org_id),
+    add_time: (raw.add_time as string) ?? null,
+    added_by_user_id: refId(raw.added_by_user_id),
+  };
+}
+
 export interface CompactNoteComment {
   uuid: string;
   content: string;

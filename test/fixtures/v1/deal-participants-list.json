@@ -1,0 +1,52 @@
+{
+  "success": true,
+  "data": [
+    {
+      "id": 301,
+      "person_id": {
+        "active_flag": true,
+        "name": "Jane Smith",
+        "email": [{ "label": "work", "value": "jane.smith@example.com", "primary": true }],
+        "phone": [{ "label": "work", "value": "+1 555 0100", "primary": true }],
+        "owner_id": 101,
+        "value": 201
+      },
+      "add_time": "2026-03-20 10:00:00",
+      "active_flag": true,
+      "related_item_data": { "deal_id": 117, "title": "Acme Corp - Enterprise Package" },
+      "person": {
+        "id": 201,
+        "name": "Jane Smith",
+        "email": [{ "label": "work", "value": "jane.smith@example.com", "primary": true }],
+        "phone": [{ "label": "work", "value": "+1 555 0100", "primary": true }],
+        "org_id": { "name": "Acme Corp", "value": 301 }
+      },
+      "added_by_user_id": { "id": 101, "name": "Bob Sales", "email": "bob@testcompany.com", "value": 101 },
+      "related_item_type": "deal",
+      "related_item_id": 117
+    },
+    {
+      "id": 302,
+      "person_id": 202,
+      "add_time": "2026-03-21 11:30:00",
+      "active_flag": true,
+      "person": {
+        "id": 202,
+        "name": "Tom Jones",
+        "email": [{ "label": "work", "value": "tom.jones@example.com", "primary": true }],
+        "phone": [],
+        "org_id": 301
+      },
+      "added_by_user_id": 101,
+      "related_item_type": "deal",
+      "related_item_id": 117
+    }
+  ],
+  "additional_data": {
+    "pagination": {
+      "start": 0,
+      "limit": 25,
+      "more_items_in_collection": false
+    }
+  }
+}

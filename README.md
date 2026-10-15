@@ -145,8 +145,8 @@ docker run -e PIPEDRIVE_API_TOKEN=xxx -e PIPEDRIVE_COMPANY_DOMAIN=yourcompany pi
 
 ## Tools
 
-### Deals (8 tools)
-`pipedrive_deals_list` `pipedrive_deals_get` `pipedrive_deals_search` `pipedrive_deals_summary` `pipedrive_deals_move_stage` `pipedrive_deals_create` `pipedrive_deals_update` `pipedrive_deals_delete`
+### Deals (11 tools)
+`pipedrive_deals_list` `pipedrive_deals_get` `pipedrive_deals_search` `pipedrive_deals_summary` `pipedrive_deals_move_stage` `pipedrive_deals_create` `pipedrive_deals_update` `pipedrive_deals_delete` `pipedrive_deal_participants_list` `pipedrive_deal_participants_add` `pipedrive_deal_participants_delete`
 
 ### Persons (7 tools)
 `pipedrive_persons_list` `pipedrive_persons_get` `pipedrive_persons_search` `pipedrive_persons_create` `pipedrive_persons_update` `pipedrive_persons_delete` `pipedrive_persons_merge`
