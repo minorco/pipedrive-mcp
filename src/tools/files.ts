@@ -1,8 +1,9 @@
 import { registerTools, type ToolDefinition } from "../mcp/register-tools.js";
-import { successResult, paginatedResult, type ToolResult } from "../mcp/tool-result.js";
+import { successResult, errorResult, paginatedResult, type ToolResult, type ErrorMeta } from "../mcp/tool-result.js";
 import { apiErrorResult, validationErrorResult } from "../mcp/errors.js";
 import { getContext } from "../server.js";
 import { withRetry } from "../pipedrive/retries.js";
+import { HttpClientError } from "../pipedrive/http-client.js";
 import { normalizeApiError } from "../pipedrive/error-normalizer.js";
 import { compactFile } from "../presenters/entities.js";
 import { resolveFilesEndpoint, buildFilePredicate, listFiles, findMailMessageFiles } from "../services/files.js";
@@ -136,10 +137,32 @@ async function handleFilesUpload(args: Record<string, unknown>): Promise<ToolRes
     if (value !== undefined) form.append(name, String(value));
   }
 
+  // No automatic retry: uploads are not idempotent. After a network error,
+  // timeout or 5xx, Pipedrive may already have saved the file, so a blind
+  // retry could attach it twice. Tell the caller to check first instead.
+  const mayHaveSaved = (detail: string, errorMeta: ErrorMeta) =>
+    errorResult(
+      `pipedrive_files_upload: ${detail}. The file may have been saved anyway. ` +
+        "Check pipedrive_files_list for the entity before retrying, or it may be attached twice.",
+      errorMeta,
+    );
+
   const { apiV1, rateLimiters } = getContext();
-  const response = await rateLimiters.general.schedule(() =>
-    withRetry(() => apiV1.postMultipart<Record<string, unknown>>("/files", form), { label: "pipedrive_files_upload" }),
-  );
+  let response;
+  try {
+    response = await rateLimiters.general.schedule(() =>
+      apiV1.postMultipart<Record<string, unknown>>("/files", form),
+    );
+  } catch (err) {
+    if (err instanceof HttpClientError) {
+      return mayHaveSaved(`network error - ${err.message}`, { category: "network" });
+    }
+    throw err;
+  }
+
+  if (response.status >= 500) {
+    return mayHaveSaved(`${response.status} from Pipedrive`, { category: "server", status: response.status });
+  }
 
   if (response.status !== 200 && response.status !== 201) {
     return apiErrorResult(normalizeApiError(response, "pipedrive_files_upload", "POST /files"));
