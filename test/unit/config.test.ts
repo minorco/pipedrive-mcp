@@ -70,4 +70,10 @@ describe("ConfigSchema auth validation", () => {
       expect(result.data.enableWriteTools).toBe(true);
     }
   });
+
+  it("treats empty-string tokens as unset", () => {
+    expect(ConfigSchema.safeParse({ ...BASE, apiToken: "", oauthToken: "oauth-token" }).success).toBe(true);
+    expect(ConfigSchema.safeParse({ ...BASE, apiToken: "api-token", oauthToken: "  " }).success).toBe(true);
+    expect(ConfigSchema.safeParse({ ...BASE, apiToken: "", oauthToken: "" }).success).toBe(false);
+  });
 });

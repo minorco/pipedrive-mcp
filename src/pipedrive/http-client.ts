@@ -12,7 +12,10 @@ export interface HttpRequestOptions {
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   url: string;
   params?: Record<string, string | number | boolean | undefined>;
+  /** JSON body (serialised, Content-Type application/json). */
   body?: unknown;
+  /** Pre-built body sent as-is, e.g. FormData for multipart uploads; fetch sets the content type. */
+  rawBody?: BodyInit;
   timeoutMs?: number;
 }
 
@@ -45,8 +48,10 @@ export function createHttpClient(config: Config) {
       headers["Authorization"] = `Bearer ${oauthToken}`;
     }
 
-    let bodyStr: string | undefined;
-    if (opts.body !== undefined) {
+    let bodyStr: BodyInit | undefined;
+    if (opts.rawBody !== undefined) {
+      bodyStr = opts.rawBody;
+    } else if (opts.body !== undefined) {
       headers["Content-Type"] = "application/json";
       bodyStr = JSON.stringify(opts.body);
     }

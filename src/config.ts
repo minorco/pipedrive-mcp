@@ -1,9 +1,12 @@
 import { z } from "zod";
 
+const emptyToUndefined = (v: unknown) => (typeof v === "string" && v.trim() === "" ? undefined : v);
+
 export const ConfigSchema = z
   .object({
-    apiToken: z.string().min(1).optional(),
-    oauthToken: z.string().min(1).optional(),
+    // Empty strings count as unset: Docker often passes VAR= for unused vars.
+    apiToken: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+    oauthToken: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
     companyDomain: z.string().min(1, "PIPEDRIVE_COMPANY_DOMAIN is required"),
     transport: z.enum(["stdio", "sse"]).default("stdio"),
     sseHost: z.string().default("0.0.0.0"),

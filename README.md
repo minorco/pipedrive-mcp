@@ -62,6 +62,8 @@ In OAuth mode, the server authenticates with `Authorization: Bearer <token>` ins
 3. Detecting 401 responses and refreshing the access token before retrying
 4. Supplying a currently-valid access token to this server via `PIPEDRIVE_OAUTH_TOKEN`
 
+The token is read once at startup, so after a refresh the host must restart the server with the new `PIPEDRIVE_OAUTH_TOKEN`. Changing the environment of a running process has no effect.
+
 If you want the server to manage its own lifetime, use `PIPEDRIVE_API_TOKEN` instead, personal API tokens don't expire.
 
 ### Optional settings
