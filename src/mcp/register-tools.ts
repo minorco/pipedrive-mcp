@@ -7,6 +7,7 @@ import { type ToolResult } from "./tool-result.js";
 import { validationErrorResult } from "./errors.js";
 import { errorResult } from "./tool-result.js";
 import { HttpClientError } from "../pipedrive/http-client.js";
+import { networkErrorText } from "../pipedrive/error-normalizer.js";
 import { PageTokenError } from "../pipedrive/pagination.js";
 import { log } from "../logging.js";
 import { captureError } from "../sentry.js";
@@ -102,7 +103,7 @@ export function setupToolHandlers(server: Server): void {
 
       // Distinguish network/API errors from validation errors
       if (err instanceof HttpClientError) {
-        return errorResult(`${name}: network error - ${message}. Retryable: yes.`);
+        return errorResult(networkErrorText(name, err));
       }
       return errorResult(`${name}: internal error - ${message}`);
     }

@@ -113,3 +113,21 @@ describe("formatErrorMessage", () => {
     expect(msg).toContain("Retryable: no");
   });
 });
+
+describe("networkErrorText", () => {
+  it("tells the caller a create may have gone through and not to retry blindly", async () => {
+    const { networkErrorText } = await import("../../../src/pipedrive/error-normalizer.js");
+    const { HttpClientError } = await import("../../../src/pipedrive/http-client.js");
+    const text = networkErrorText("pipedrive_deals_create", new HttpClientError("network", 0, "socket hang up", 1, "POST"));
+    expect(text).toContain("may have gone through");
+    expect(text).toContain("Retryable: no");
+  });
+
+  it("keeps reads and updates retryable", async () => {
+    const { networkErrorText } = await import("../../../src/pipedrive/error-normalizer.js");
+    const { HttpClientError } = await import("../../../src/pipedrive/http-client.js");
+    const text = networkErrorText("pipedrive_deals_get", new HttpClientError("network", 0, "socket hang up", 1, "GET"));
+    expect(text).toContain("Retryable: yes");
+    expect(text).not.toContain("may have gone through");
+  });
+});

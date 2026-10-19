@@ -63,6 +63,18 @@ function getGuidance(status: number, pipedriveError: string): string {
   }
 }
 
+const WRITE_MAY_HAVE_SUCCEEDED =
+  "Pipedrive returned an error, but the create may have gone through anyway. " +
+  "Check whether the record exists before retrying, or it may be created twice.";
+
+/** Tool-result text for a request that threw (network error or timeout). */
+export function networkErrorText(tool: string, err: HttpClientError): string {
+  if (err.method === "POST") {
+    return `${tool}: network error - ${err.message}. ${WRITE_MAY_HAVE_SUCCEEDED} Retryable: no.`;
+  }
+  return `${tool}: network error - ${err.message}. Retryable: yes.`;
+}
+
 export function normalizeApiError(
   response: HttpResponse,
   tool: string,
@@ -82,6 +94,11 @@ export function normalizeApiError(
     retryable: status === 429 || status >= 500,
     guidance: getGuidance(status, pipedriveError),
   };
+
+  if (status >= 500 && endpoint.startsWith("POST ")) {
+    result.retryable = false;
+    result.guidance = WRITE_MAY_HAVE_SUCCEEDED;
+  }
 
   if (status === 429) {
     const { retryAfterMs } = parseRateLimitHeaders(response.headers);
@@ -105,8 +122,11 @@ export function normalizeNetworkError(
     tool,
     endpoint,
     pipedrive_error: err.message,
-    retryable: true,
-    guidance: `Network error: ${err.message}. Check connectivity and retry.`,
+    retryable: err.method !== "POST",
+    guidance:
+      err.method === "POST"
+        ? `Network error: ${err.message}. ${WRITE_MAY_HAVE_SUCCEEDED}`
+        : `Network error: ${err.message}. Check connectivity and retry.`,
   };
 }
 

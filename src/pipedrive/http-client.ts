@@ -6,6 +6,8 @@ export interface HttpResponse<T = unknown> {
   data: T;
   headers: Record<string, string>;
   durationMs: number;
+  /** Request method, so retry and error handling can treat creates (POST) as non-idempotent. */
+  method?: HttpRequestOptions["method"];
 }
 
 export interface HttpRequestOptions {
@@ -79,10 +81,10 @@ export function createHttpClient(config: Config) {
       clearTimeout(timer);
       const durationMs = Date.now() - start;
       if (err instanceof DOMException && err.name === "AbortError") {
-        throw new HttpClientError("network", 0, `Request timed out after ${timeout}ms`, durationMs);
+        throw new HttpClientError("network", 0, `Request timed out after ${timeout}ms`, durationMs, opts.method);
       }
       const message = err instanceof Error ? err.message : String(err);
-      throw new HttpClientError("network", 0, message, durationMs);
+      throw new HttpClientError("network", 0, message, durationMs, opts.method);
     }
 
     clearTimeout(timer);
@@ -112,6 +114,7 @@ export function createHttpClient(config: Config) {
       data,
       headers: responseHeaders,
       durationMs,
+      method: opts.method,
     };
   }
 
@@ -124,6 +127,7 @@ export class HttpClientError extends Error {
     public readonly status: number,
     message: string,
     public readonly durationMs: number,
+    public readonly method?: HttpRequestOptions["method"],
   ) {
     super(message);
     this.name = "HttpClientError";

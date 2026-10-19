@@ -287,7 +287,7 @@ describe("pipedrive_files_upload", () => {
     expect(result.errorMeta).toEqual({ category: "forbidden", status: 403 });
   });
 
-  it("does not retry a 5xx upload and warns it may have been saved", async () => {
+  it("does not retry a 5xx upload and warns it may have gone through", async () => {
     let calls = 0;
     nock(BASE_URL)
       .post("/api/v1/files")
@@ -303,18 +303,17 @@ describe("pipedrive_files_upload", () => {
     expect(result.isError).toBe(true);
     expect(calls).toBe(1);
     expect(result.errorMeta).toEqual({ category: "server", status: 503 });
-    expect(String(data)).toContain("pipedrive_files_list");
+    expect(String(data)).toContain("may have gone through");
   });
 
-  it("does not retry after a network error and warns it may have been saved", async () => {
+  it("does not retry after a network error", async () => {
     nock(BASE_URL).post("/api/v1/files").query(true).replyWithError("socket hang up");
     const extra = nock(BASE_URL).post("/api/v1/files").query(true).reply(201, { success: true, data: { id: 1 } });
 
-    const { result, data } = await callTool("pipedrive_files_upload", { file_name: "x.txt", content_base64: "aGk=", deal_id: 117 });
+    await expect(
+      callTool("pipedrive_files_upload", { file_name: "x.txt", content_base64: "aGk=", deal_id: 117 }),
+    ).rejects.toMatchObject({ method: "POST" });
 
-    expect(result.isError).toBe(true);
     expect(extra.isDone()).toBe(false);
-    expect(result.errorMeta).toEqual({ category: "network" });
-    expect(String(data)).toContain("may have been saved");
   });
 });

@@ -1,6 +1,6 @@
 import { log } from "../logging.js";
 import { parseRateLimitHeaders } from "./rate-limit.js";
-import { type HttpResponse } from "./http-client.js";
+import { HttpClientError, type HttpResponse } from "./http-client.js";
 
 export interface RetryOptions {
   attempts?: number;
@@ -15,6 +15,14 @@ const DEFAULT_OPTIONS: Required<RetryOptions> = {
   factor: 2,
   label: "request",
 };
+
+// Creates (POST) are not idempotent: after a network error, timeout or 5xx,
+// Pipedrive may already have written the record, so a blind retry could
+// create it twice. Only a 429 is retried for them, because Pipedrive rejects
+// rate-limited requests before processing them.
+function isNonIdempotent(method: string | undefined): boolean {
+  return method === "POST";
+}
 
 function isRetryableStatus(status: number): boolean {
   return status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
@@ -60,6 +68,9 @@ export async function withRetry<T>(
 
       // Other retryable status
       consecutive429s = 0;
+      if (isNonIdempotent(response.method)) {
+        return response;
+      }
       if (attempt < attempts) {
         log.warn(`${label}: status ${response.status}, retrying in ${currentDelay}ms`, { attempt });
         await sleep(currentDelay);
@@ -70,6 +81,9 @@ export async function withRetry<T>(
     } catch (err) {
       consecutive429s = 0;
       lastError = err instanceof Error ? err : new Error(String(err));
+      if (err instanceof HttpClientError && isNonIdempotent(err.method)) {
+        throw err;
+      }
 
       if (attempt < attempts) {
         log.warn(`${label}: ${lastError.message}, retrying in ${currentDelay}ms`, { attempt });

@@ -106,6 +106,34 @@ describe("pipedrive_deals_search", () => {
 });
 
 describe("pipedrive_deals_create", () => {
+  it("does not retry a create that returns 503, and says it may have gone through", async () => {
+    let calls = 0;
+    nock(BASE_URL)
+      .post("/api/v2/deals")
+      .query(true)
+      .times(3)
+      .reply(() => {
+        calls++;
+        return [503, { success: false, error: "Service unavailable" }];
+      });
+
+    const { result, data } = await callTool("pipedrive_deals_create", { title: "Acme Corp" });
+
+    expect(result.isError).toBe(true);
+    expect(calls).toBe(1);
+    expect(String(data)).toContain("may have gone through");
+    expect(String(data)).toContain("Retryable: no");
+  });
+
+  it("does not retry a create after a network error", async () => {
+    nock(BASE_URL).post("/api/v2/deals").query(true).replyWithError("socket hang up");
+    const second = nock(BASE_URL).post("/api/v2/deals").query(true).reply(201, fixturesV2("deals-create.json"));
+
+    // The thrown error reaches the server's tool wrapper, which words it with networkErrorText.
+    await expect(callTool("pipedrive_deals_create", { title: "Acme Corp" })).rejects.toMatchObject({ method: "POST" });
+    expect(second.isDone()).toBe(false);
+  });
+
   it("creates a deal and returns compact result", async () => {
     const fixture = fixturesV2("deals-create.json");
 
