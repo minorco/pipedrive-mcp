@@ -17,7 +17,8 @@ export const ConfigSchema = z
     enableWriteTools: z
       .string()
       .transform((v) => v.toLowerCase() !== "false")
-      .default("true"),
+      // zod 4 defaults are output values and skip the transform
+      .default(true),
     logLevel: z.enum(["debug", "info", "warn", "error"]).default("info"),
     // Namespace for the module-level metadata caches (users, custom fields,
     // activity types). Hosts that serve several Pipedrive accounts from one
