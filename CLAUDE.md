@@ -37,8 +37,8 @@ Uses the `dev-session` skill (development plugin). Run session-start before edit
 
 - Topology: fork-worker
 - Repos:
-  - fork: /Users/warwickpalm/Work/mcp/pipedrive-mcp  (origin: minorco/pipedrive-mcp, upstream: comma-compliance/pipedrive-mcp)
-  - worker: /Users/warwickpalm/Work/mcp/pipedrive-mcp-cloudflare  (origin: minorco/pipedrive-mcp-cloudflare)
+  - fork: /Users/warwickpalm/Work/launch-control/tech-stack/mcp/pipedrive-mcp  (origin: minorco/pipedrive-mcp, upstream: comma-compliance/pipedrive-mcp)
+  - worker: /Users/warwickpalm/Work/launch-control/tech-stack/mcp/pipedrive-mcp-cloudflare  (origin: minorco/pipedrive-mcp-cloudflare)
 - Deploy:
   - Push fork `integration` → `notify-cloudflare` workflow dispatches to the worker repo → `sync-and-deploy` re-runs the fork test gate, syncs the fork into the worker, and pushes worker `dev` → Cloudflare auto-deploys the STAGING worker (`pipedrive-mcp-staging`).
   - Promote to LIVE only via the worker repo's `promote-to-live` workflow (`gh workflow run promote-to-live.yml --repo minorco/pipedrive-mcp-cloudflare`), which merges worker `dev` → `main` → deploys the LIVE worker (`pipedrive-mcp`). Always confirm explicitly before promoting.
@@ -46,10 +46,5 @@ Uses the `dev-session` skill (development plugin). Run session-start before edit
 - Contribution policy: this fork is MinorCo's own maintained downstream line. Do NOT open PRs to comma-compliance/pipedrive-mcp unless Warwick explicitly asks. comma-compliance is a passive `upstream` remote; pull from it manually and review before folding in. Log upstreamable commits in `UPSTREAM-CANDIDATES.md`.
 - Protected branches: the following fork branches back OPEN PRs to comma-compliance/pipedrive-mcp. NEVER delete them in a branch-cleanup or fork-sync pass. Deleting the head branch auto-closes the upstream PR (this happened once on 2026-06-22 and closed all seven at once). Do not prune them until the PR is merged or Warwick says to abandon it:
   - `feat/oauth-bearer-auth` (PR #10)
-  - `fix/set-custom-fields-v2` (PR #11)
-  - `docs/clarify-note-html-no-cdata` (PR #13)
-  - `fix/include-fields-and-activity-type-validation` (PR #14)
-  - `fix/activity-presenter-owner-id` (PR #15)
-  - `fix/sort-by-enum-correction` (PR #16)
-  - `feat/product-variations` (PR #17)
+  - Upstream merged #13-#17 on 2026-10-02 and closed #11 in favour of its own #19. Their branches were deleted on 2026-10-20 after confirming nothing on them was missing from `integration`. When a PR here merges or closes, check that before removing its line and branch.
 - Specifics: `UPSTREAM-CANDIDATES.md` (upstreamable commit log); `../pipedrive-mcp-cloudflare/SYNC-PROCESS.md` (sync mechanics, worker-only paths); `../pipedrive-mcp-cloudflare/README.md` (deploy/env overview).
