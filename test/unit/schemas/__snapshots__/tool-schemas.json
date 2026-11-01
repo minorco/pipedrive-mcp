@@ -586,7 +586,14 @@
         "description": "Number of items per page (default 25, max 100)"
       },
       "sort_by": {
-        "type": "string"
+        "type": "string",
+        "enum": [
+          "id",
+          "add_time",
+          "update_time",
+          "order_nr"
+        ],
+        "description": "Field to sort by"
       },
       "sort_direction": {
         "type": "string",
@@ -1371,7 +1378,14 @@
       },
       "sort_by": {
         "type": "string",
-        "description": "Field to sort by"
+        "enum": [
+          "id",
+          "update_time",
+          "add_time",
+          "name",
+          "due_date"
+        ],
+        "description": "Field to sort by: id, update_time or add_time for any entity; also name for products, due_date for activity"
       },
       "sort_direction": {
         "type": "string",
