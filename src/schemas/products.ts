@@ -91,7 +91,7 @@ export const DealProductsListSchema = z.object({
   deal_id: IdSchema.describe("The deal ID"),
   cursor: PageTokenSchema,
   limit: LimitSchema,
-  sort_by: z.string().optional(),
+  sort_by: z.enum(["id", "add_time", "update_time", "order_nr"]).optional().describe("Field to sort by"),
   sort_direction: SortDirectionSchema,
 }).strict();
 
