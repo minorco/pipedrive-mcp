@@ -41,6 +41,28 @@ describe("normalizeApiError", () => {
     expect(err.guidance).toContain("add-on");
   });
 
+  it("categorizes a 400 whose message says not found as not_found", () => {
+    const err = normalizeApiError(
+      { status: 400, data: { error: "Validation failed: filter_id: Filter not found." }, headers: {}, durationMs: 40 },
+      "pipedrive_filters_results",
+      "GET /deals?filter_id=1168",
+    );
+    expect(err.category).toBe("not_found");
+    expect(err.status).toBe(400);
+    expect(err.retryable).toBe(false);
+    expect(err.guidance).toContain("Filter not found");
+    expect(err.guidance).toContain("Verify the ID");
+  });
+
+  it("keeps other 400s as validation", () => {
+    const err = normalizeApiError(
+      { status: 400, data: { error: "Validation failed: sort_by: Must be one of: id, update_time, add_time" }, headers: {}, durationMs: 40 },
+      "pipedrive_filters_results",
+      "GET /deals",
+    );
+    expect(err.category).toBe("validation");
+  });
+
   it("categorizes 404 as not_found", () => {
     const err = normalizeApiError(
       { status: 404, data: { error: "Not found" }, headers: {}, durationMs: 50 },

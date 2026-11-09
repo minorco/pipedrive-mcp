@@ -38,6 +38,10 @@ export function categorizeStatus(status: number): ErrorCategory {
   return "validation";
 }
 
+function isNotFound400(status: number, pipedriveError: string): boolean {
+  return status === 400 && /\bnot found\b/i.test(pipedriveError);
+}
+
 function getGuidance(status: number, pipedriveError: string): string {
   switch (status) {
     case 401:
@@ -81,9 +85,12 @@ export function normalizeApiError(
   endpoint: string,
 ): NormalizedError {
   const status = response.status;
-  const category = categorizeStatus(status);
   const data = response.data as Record<string, unknown> | undefined;
   const pipedriveError = (data?.error as string) ?? (data?.error_info as string) ?? "";
+  // Pipedrive answers some lookups of a missing ID with a 400 instead of a 404
+  // (e.g. "Validation failed: filter_id: Filter not found."). Treat those as
+  // not_found so they get the same handling as a 404.
+  const category = isNotFound400(status, pipedriveError) ? "not_found" : categorizeStatus(status);
 
   const result: NormalizedError = {
     category,
@@ -92,7 +99,9 @@ export function normalizeApiError(
     endpoint,
     pipedrive_error: pipedriveError,
     retryable: status === 429 || status >= 500,
-    guidance: getGuidance(status, pipedriveError),
+    guidance: category === "not_found"
+      ? `${pipedriveError} ${getGuidance(404, pipedriveError)}`.trim()
+      : getGuidance(status, pipedriveError),
   };
 
   if (status >= 500 && endpoint.startsWith("POST ")) {
